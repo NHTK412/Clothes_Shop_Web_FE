@@ -1,5 +1,5 @@
-import { LoadingOutlined } from "@ant-design/icons";
-import { notification } from "antd";
+import { EyeInvisibleOutlined, EyeOutlined, LoadingOutlined } from "@ant-design/icons";
+import { notification, Spin } from "antd";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { register } from "../../services/AuthService";
@@ -16,6 +16,9 @@ const RegisterPage = () => {
 
     const [loading, setLoading] = useState(false);
 
+    const [isShowPassword, setIsShowPassword] = useState(false);
+    const [isShowConfirmPassword, setIsShowConfirmPassword] = useState(false);
+
     const handleSubmit = async (e) => {
         try {
             e.preventDefault();
@@ -29,7 +32,7 @@ const RegisterPage = () => {
                 password_confirmation: confirmPassword
             };
 
-            const result = await register(registerData);
+            const response = await register(registerData);
 
             notification.success({
                 title: "Đăng ký thành công",
@@ -69,65 +72,83 @@ const RegisterPage = () => {
                             <p className="text-body-sm font-body-sm text-secondary">Vui lòng điền thông tin bên dưới để bắt đầu
                                 mua sắm.</p>
                         </div>
-                        <form className="space-y-md" onSubmit={handleSubmit}>
-                            <div className="flex flex-col gap-xs">
-                                <label className="text-label-sm font-label-sm text-on-surface" for="fullname">Họ và tên</label>
-                                <input
-                                    className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-body-md font-body-md"
-                                    id="fullname" placeholder="Nguyễn Văn A" type="text" name="name" onChange={(e) => setName(e.target.value)} />
-                            </div>
-                            <div className="flex flex-col gap-xs">
-                                <label className="text-label-sm font-label-sm text-on-surface" for="email">Email</label>
-                                <input
-                                    className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-body-md font-body-md"
-                                    id="email" placeholder="example@gmail.com" type="email" name="email" onChange={(e) => setEmail(e.target.value)} />
-                            </div>
-                            <div className="flex flex-col gap-xs">
-                                <label className="text-label-sm font-label-sm text-on-surface" for="phone">Số điện
-                                    thoại</label>
-                                <input
-                                    className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-body-md font-body-md"
-                                    id="phone" placeholder="0123 456 789" type="tel" name="phone" onChange={(e) => setPhone(e.target.value)} />
-                            </div>
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+                        <Spin spinning={loading} tip="Đang đăng ký..." size="large" className="w-full">
+                            <form className="space-y-md" onSubmit={handleSubmit}>
                                 <div className="flex flex-col gap-xs">
-                                    <label className="text-label-sm font-label-sm text-on-surface" for="password">Mật
-                                        khẩu</label>
+                                    <label className="text-label-sm font-label-sm text-on-surface" for="fullname">Họ và tên</label>
                                     <input
                                         className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-body-md font-body-md"
-                                        id="password" placeholder="••••••••" type="password" name="password" onChange={(e) => setPassword(e.target.value)} />
+                                        id="fullname" placeholder="Nguyễn Văn A" type="text" name="name" onChange={(e) => setName(e.target.value)} value={name} />
                                 </div>
                                 <div className="flex flex-col gap-xs">
-                                    <label className="text-label-sm font-label-sm text-on-surface" for="confirm_password">Xác
-                                        nhận mật khẩu</label>
+                                    <label className="text-label-sm font-label-sm text-on-surface" for="email">Email</label>
                                     <input
                                         className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-body-md font-body-md"
-                                        id="confirm_password" placeholder="••••••••" type="password"
-                                        name="password_confirmation" onChange={(e) => setConfirmPassword(e.target.value)} />
+                                        id="email" placeholder="example@gmail.com" type="email" name="email" onChange={(e) => setEmail(e.target.value)} value={email} />
                                 </div>
-                            </div>
-                            <div className="flex items-start gap-xs py-xs">
-                                <input className="mt-1 rounded border-outline-variant text-primary focus:ring-primary"
-                                    id="terms" type="checkbox" />
-                                <label className="text-body-sm font-body-sm text-secondary" for="terms">
-                                    Tôi đồng ý với <a className="text-primary hover:underline" href="#">Điều khoản dịch
-                                        vụ</a> và <a className="text-primary hover:underline" href="#">Chính sách bảo
-                                            mật</a>.
-                                </label>
-                            </div>
-                            <button
-                                className="w-full bg-primary text-on-primary font-label-md text-label-md py-sm rounded-lg hover:bg-primary-container hover:shadow-md transition-all duration-300 transform active:scale-95 flex justify-center items-center gap-xs"
-                                type="submit" >
-                                {
-                                    loading && <LoadingOutlined />
-                                }
-                                <p classNameName="font-label-md mx-10">Đăng ký ngay</p>
-                                <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
-                            </button>
-                        </form>
+                                <div className="flex flex-col gap-xs">
+                                    <label className="text-label-sm font-label-sm text-on-surface" for="phone">Số điện
+                                        thoại</label>
+                                    <input
+                                        className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-body-md font-body-md"
+                                        id="phone" placeholder="0123 456 789" type="tel" name="phone" onChange={(e) => setPhone(e.target.value)} value={phone} />
+                                </div>
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-md">
+                                    <div className="flex flex-col gap-xs">
+                                        <label className="text-label-sm font-label-sm text-on-surface" for="password">Mật
+                                            khẩu</label>
+                                        <div className="relative">
+                                            <input
+                                                className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-body-md font-body-md"
+                                                id="password" placeholder="••••••••" type={isShowPassword ? "text" : "password"} name="password" onChange={(e) => setPassword(e.target.value)} value={password} />
+                                            <button className="absolute right-sm top-1/2 -translate-y-1/2 text-secondary hover:text-primary"
+                                                type="button" id="toggle-password" onClick={() => setIsShowPassword(!isShowPassword)}>
+                                                {
+                                                    isShowPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />
+                                                }
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex flex-col gap-xs">
+                                        <label className="text-label-sm font-label-sm text-on-surface" for="confirm_password">Xác
+                                            nhận mật khẩu</label>
+                                        <div className="relative">
+                                            <input
+                                                className="w-full px-sm py-xs bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary outline-none transition-all text-body-md font-body-md"
+                                                id="confirm_password" placeholder="••••••••" type={isShowConfirmPassword ? "text" : "password"}
+                                                name="password_confirmation" onChange={(e) => setConfirmPassword(e.target.value)} value={confirmPassword} />
+                                            <button className="absolute right-sm top-1/2 -translate-y-1/2 text-secondary hover:text-primary"
+                                                type="button" id="toggle-password" onClick={() => setIsShowConfirmPassword(!isShowConfirmPassword)}>
+                                                {/* <span className="material-symbols-outlined text-[20px]" id="password-icon">visibility</span> */}
+                                                {
+                                                    isShowConfirmPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />
+                                                }
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-xs py-xs">
+                                    <input className="mt-1 rounded border-outline-variant text-primary focus:ring-primary"
+                                        id="terms" type="checkbox" />
+                                    <label className="text-body-sm font-body-sm text-secondary" for="terms">
+                                        Tôi đồng ý với <a className="text-primary hover:underline" href="#">Điều khoản dịch
+                                            vụ</a> và <a className="text-primary hover:underline" href="#">Chính sách bảo
+                                                mật</a>.
+                                    </label>
+                                </div>
+                                <button
+                                    className="w-full bg-primary text-on-primary font-label-md text-label-md py-sm rounded-lg hover:bg-primary-container hover:shadow-md transition-all duration-300 transform active:scale-95 flex justify-center items-center gap-xs hover:cursor-pointer"
+                                    type="submit" >
+                                    <p classNameName="font-label-md mx-10">Đăng ký ngay</p>
+                                    <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
+                                </button>
+                            </form>
+                        </Spin>
                         <div className="mt-lg pt-lg border-t border-outline-variant flex flex-col items-center gap-sm">
                             <p className="text-body-sm font-body-sm text-secondary">Đã có tài khoản?
-                                <a className="text-primary font-bold hover:underline" onClick={() => navigate('/login')}> Đăng nhập
+                                <a className="text-primary font-bold hover:underline hover:cursor-pointer" onClick={() => navigate('/login')}> Đăng nhập
                                     ngay</a>
                             </p>
                         </div>

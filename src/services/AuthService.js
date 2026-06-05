@@ -20,7 +20,29 @@ const register = async (registerData) => {
     }
 };
 
+const sendOtp = async (email) => {
+    try {
+        const response = await axios.post("/auth/send-reset-link", { email });
+        return response.data;
+    }
+    catch (error) {
+        throw error;
+    }
+};
+
+const resetPassword = async (resetData) => {
+    try {
+        const response = await axios.post("/auth/reset-password", resetData);
+        return response.data;
+    }
+    catch (error) {
+        throw error;
+    }
+};
+
 export {
     login,
-    register
+    register,
+    sendOtp,
+    resetPassword
 }

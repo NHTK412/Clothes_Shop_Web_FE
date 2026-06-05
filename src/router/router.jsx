@@ -4,6 +4,7 @@ import ClientLayout from "../layouts/ClientLayout";
 import RegisterPage from "../pages/auth/RegisterPage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import PublicRouter from "./PublicRouter";
+import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 
 const router = createBrowserRouter([
     {
@@ -35,6 +36,14 @@ const router = createBrowserRouter([
                 element: (
                     <PublicRouter>
                         <ForgotPasswordPage />
+                    </PublicRouter>
+                )
+            },
+            {
+                path: "reset-password",
+                element: (
+                    <PublicRouter>
+                        <ResetPasswordPage />
                     </PublicRouter>
                 )
             }

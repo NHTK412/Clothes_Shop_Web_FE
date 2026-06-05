@@ -3,7 +3,7 @@ import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { login } from "../../services/AuthService";
-import { Button, notification } from "antd";
+import { Button, notification, Spin } from "antd";
 import Cookies from "js-cookie";
 
 const LoginPage = () => {
@@ -66,46 +66,45 @@ const LoginPage = () => {
                     <span className="flex-shrink mx-sm font-label-sm text-label-sm text-secondary">Hoặc bằng Email</span>
                     <div className="flex-grow border-t border-outline-variant"></div>
                 </div>
-                <form className="space-y-md" onSubmit={handleSubmit}>
-                    <div className="flex flex-col gap-xs">
-                        <label className="font-label-sm text-label-sm text-on-surface" for="email">Email của bạn</label>
-                        <input
-                            className="w-full px-sm py-md bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 outline-none text-body-md"
-                            id="email" placeholder="example@luxe.com" required="" type="email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-                    </div>
-                    <div className="flex flex-col gap-xs">
-                        <div className="flex justify-between items-center">
-                            <label className="font-label-sm text-label-sm text-on-surface" for="password">Mật khẩu</label>
-                            <a className="font-label-sm text-label-sm text-primary hover:underline" onClick={() => navigate('/forgot-password')}>Quên mật
-                                khẩu?</a>
-                        </div>
-                        <div className="relative">
+                <Spin spinning={loading} tip="Đang đăng nhập..." size="large" className="w-full">
+                    <form className="space-y-md" onSubmit={handleSubmit}>
+                        <div className="flex flex-col gap-xs">
+                            <label className="font-label-sm text-label-sm text-on-surface" for="email">Email của bạn</label>
                             <input
                                 className="w-full px-sm py-md bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 outline-none text-body-md"
-                                id="password" placeholder="••••••••" required="" type={showPassword ? "text" : "password"} name="password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                            <button className="absolute right-sm top-1/2 -translate-y-1/2 text-secondary hover:text-primary"
-                                type="button" id="toggle-password" onClick={() => setShowPassword(!showPassword)}>
-                                {/* <span className="material-symbols-outlined text-[20px]" id="password-icon">visibility</span> */}
-                                {
-                                    showPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />
-                                }
-                            </button>
+                                id="email" placeholder="example@luxe.com" required="" type="email" name="email" value={email} onChange={(e) => setEmail(e.target.value)} />
                         </div>
-                    </div>
-                    <button
-                        className="w-full py-md bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-primary-container transition-all hover:cursor-pointer duration-200 active:scale-[0.98]"
-                        type="submit"
-                        disabled={loading}>
-                        {
-                            loading && <LoadingOutlined />
-                        }
-                        <div className="inline ml-3">Đăng nhập</div>
-                    </button>
-                </form>
+                        <div className="flex flex-col gap-xs">
+                            <div className="flex justify-between items-center">
+                                <label className="font-label-sm text-label-sm text-on-surface" for="password">Mật khẩu</label>
+                                <a className="font-label-sm text-label-sm text-primary hover:underline" onClick={() => navigate('/forgot-password')}>Quên mật
+                                    khẩu?</a>
+                            </div>
+                            <div className="relative">
+                                <input
+                                    className="w-full px-sm py-md bg-surface-container-lowest border border-outline-variant rounded-lg focus:ring-4 focus:ring-primary/10 focus:border-primary transition-all duration-200 outline-none text-body-md"
+                                    id="password" placeholder="••••••••" required="" type={showPassword ? "text" : "password"} name="password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                                <button className="absolute right-sm top-1/2 -translate-y-1/2 text-secondary hover:text-primary"
+                                    type="button" id="toggle-password" onClick={() => setShowPassword(!showPassword)}>
+                                    {/* <span className="material-symbols-outlined text-[20px]" id="password-icon">visibility</span> */}
+                                    {
+                                        showPassword ? <EyeOutlined /> : <EyeInvisibleOutlined />
+                                    }
+                                </button>
+                            </div>
+                        </div>
+                        <button
+                            className="w-full py-md bg-primary text-on-primary font-label-md text-label-md rounded-lg hover:bg-primary-container transition-all hover:cursor-pointer duration-200 active:scale-[0.98]"
+                            type="submit"
+                        >
+                            <div className="inline ml-3">Đăng nhập</div>
+                        </button>
+                    </form>
+                </Spin>
                 <div className="text-center mt-lg">
                     <p className="font-body-sm text-body-sm text-secondary">
                         Bạn chưa có tài khoản?
-                        <a className="text-primary font-bold hover:underline" onClick={() => navigate('/register')}> Đăng ký ngay</a>
+                        <a className="text-primary font-bold hover:underline hover:cursor-pointer" onClick={() => navigate('/register')}> Đăng ký ngay</a>
                     </p>
                 </div>
             </div>
