@@ -29,27 +29,12 @@ const LoginPage = () => {
                 description: "Bạn đã đăng nhập thành công. Chuyển hướng đến trang chủ...",
             })
 
-            // {
-            //     "status": "success",
-            //         "message": null,
-            //             "data": {
-            //         "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJodHRwOi8vMTI3LjAuMC4xOjgwMDAvYXBpL2F1dGgvbG9naW4iLCJpYXQiOjE3ODA2NzQxNjIsImV4cCI6MTc4MDY3Nzc2MiwibmJmIjoxNzgwNjc0MTYyLCJqdGkiOiJiU0RCRzdxQzZNYVVlTEZVIiwic3ViIjoiMSIsInBydiI6IjIzYmQ1Yzg5NDlmNjAwYWRiMzllNzAxYzQwMDg3MmRiN2E1OTc2ZjcifQ.WTXg8Z_L_zI4rkWZfpSQwdQoIuPiFJEtc6kiKETi__8",
-            //             "expires_in": 3600,
-            //                 "user": {
-            //             "id": 1,
-            //                 "email": "nguyenhuutuankhang412@gmail.com",
-            //                     "name": "Nguyễn Hữu Tuấn Khang",
-            //                         "phone": "0366408263",
-            //                             "avatar": null,
-            //                                 "role": "ROLE_CUSTOMER",
-            //                                     "status": "ACTIVE"
-            //         }
-            //     }
-            // }
-
-            Cookies.set("access_token", response.access_token, { 
-                expires:  response.expires_in / (60 * 60 * 24) 
+            Cookies.set("access_token", response.access_token, {
+                expires: response.expires_in / (60 * 60 * 24)
             });
+
+            navigate('/');
+
         } catch (error) {
             console.log("Login error:", error);
             notification.error({
@@ -112,9 +97,9 @@ const LoginPage = () => {
                         type="submit"
                         disabled={loading}>
                         {
-                            loading ?? <LoadingOutlined />
+                            loading && <LoadingOutlined />
                         }
-                        Đăng nhập
+                        <div className="inline ml-3">Đăng nhập</div>
                     </button>
                 </form>
                 <div className="text-center mt-lg">

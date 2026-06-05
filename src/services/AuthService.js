@@ -10,7 +10,17 @@ const login = async (loginData) => {
     }
 };
 
+const register = async (registerData) => {
+    try {
+        const response = await axios.post("/auth/register", registerData);
+        return response.data;
+    }
+    catch (error) {
+        throw error;
+    }
+};
 
 export {
-    login
+    login,
+    register
 }
