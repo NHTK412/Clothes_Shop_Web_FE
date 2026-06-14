@@ -1,3 +1,5 @@
+/* eslint-disable no-useless-assignment */
+/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import productsService from "../../services/ProductsService";

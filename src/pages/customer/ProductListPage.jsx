@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState, useRef } from "react";
@@ -329,7 +330,7 @@ export default function ProductListPage() {
                     ))}
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col items-center gap-4 mt-10">
                     <nav aria-label="Pagination" className="flex items-center gap-2">
                       <button
                         className="px-md py-sm border rounded-lg"
@@ -388,7 +389,7 @@ export default function ProductListPage() {
                         Tiếp
                       </button>
                     </nav>
-                    <div>Page {page}{pagination?.totalPages ? ` / ${pagination.totalPages}` : ''}</div>
+                    <div className="text-sm text-on-surface-variant">Page {page}{pagination?.totalPages ? ` / ${pagination.totalPages}` : ''}</div>
                   </div>
                 </>
               )}
