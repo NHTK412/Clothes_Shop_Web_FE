@@ -1,3 +1,4 @@
+/* eslint-disable no-useless-catch */
 import axios from "../configs/AxiosConfig";
 
 const login = async (loginData) => {

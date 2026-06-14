@@ -5,6 +5,9 @@ import RegisterPage from "../pages/auth/RegisterPage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import PublicRouter from "./PublicRouter";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
+import HomePage from "../pages/customer/HomePage";
+import ProductListPage from "../pages/customer/ProductListPage";
+import ProductDetailPage from "../pages/customer/ProductDetailPage";
 
 const router = createBrowserRouter([
     {
@@ -13,7 +16,15 @@ const router = createBrowserRouter([
         children: [
             {
                 index: true,
-                element: <h1>Home Page</h1>
+                element: <HomePage />
+            },
+            {
+                path: "products",
+                element: <ProductListPage />
+            },
+            {
+                path: "products/:id",
+                element: <ProductDetailPage />
             },
             {
                 path: "login",
