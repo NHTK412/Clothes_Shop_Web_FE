@@ -1,8 +1,9 @@
 import { Link } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import CartService from "../../services/CartService";
+import AddressService from "../../services/AddressService";
+import AddressSelectionModal from "../../components/client/AddressSelectionModal";
 
-const shippingFee = 35000;
 const discountRate = 0.1;
 
 const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")}₫`;
@@ -34,6 +35,11 @@ const CartDetailPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [updatingItemId, setUpdatingItemId] = useState(null);
+    const [addressModalOpen, setAddressModalOpen] = useState(false);
+    const [selectedAddress, setSelectedAddress] = useState(null);
+    const [shippingFee, setShippingFee] = useState(0);
+    const [shippingFeeLoading, setShippingFeeLoading] = useState(false);
+    const [shippingFeeError, setShippingFeeError] = useState("");
 
     useEffect(() => {
         let mounted = true;
@@ -68,6 +74,43 @@ const CartDetailPage = () => {
     );
     const discount = Math.round(subtotal * discountRate);
     const total = Math.max(subtotal + shippingFee - discount, 0);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const fetchShippingFee = async () => {
+            if (!selectedAddress || cartItems.length === 0) {
+                setShippingFee(0);
+                setShippingFeeError("");
+                return;
+            }
+
+            setShippingFeeLoading(true);
+            setShippingFeeError("");
+
+            try {
+                const fee = await AddressService.getShippingFee(
+                    selectedAddress.ward_code,
+                    selectedAddress.district_id
+                );
+
+                if (!mounted) return;
+                setShippingFee(fee);
+            } catch (e) {
+                if (!mounted) return;
+                setShippingFee(0);
+                setShippingFeeError(e?.response?.data?.message || "Không thể tính phí vận chuyển.");
+            } finally {
+                if (mounted) setShippingFeeLoading(false);
+            }
+        };
+
+        fetchShippingFee();
+
+        return () => {
+            mounted = false;
+        };
+    }, [cartItems.length, selectedAddress]);
 
     const updateQuantity = async (itemId, nextQuantity) => {
         setUpdatingItemId(itemId);
@@ -206,6 +249,37 @@ const CartDetailPage = () => {
                             Tóm tắt đơn hàng
                         </h2>
 
+                        <div className="mb-md border border-outline-variant bg-surface p-sm">
+                            <div className="mb-xs flex items-center justify-between gap-sm">
+                                <div className="flex items-center gap-xs text-on-surface">
+                                    <span className="material-symbols-outlined text-primary">location_on</span>
+                                    <span className="font-label-md text-label-md">Địa chỉ giao hàng</span>
+                                </div>
+                                <button
+                                    className="text-label-sm text-primary hover:underline disabled:opacity-60"
+                                    disabled={cartItems.length === 0}
+                                    type="button"
+                                    onClick={() => setAddressModalOpen(true)}>
+                                    {selectedAddress ? "Thay đổi" : "Chọn địa chỉ"}
+                                </button>
+                            </div>
+                            {selectedAddress ? (
+                                <div className="text-body-sm text-secondary">
+                                    <p className="font-label-md text-on-surface">
+                                        {selectedAddress.full_name} - {selectedAddress.phone}
+                                    </p>
+                                    <p className="mt-1">
+                                        {selectedAddress.specific_address}, {selectedAddress.ward_name},{" "}
+                                        {selectedAddress.district_name}, {selectedAddress.province_name}
+                                    </p>
+                                </div>
+                            ) : (
+                                <p className="text-body-sm text-secondary">
+                                    Chọn địa chỉ để chuẩn bị tính phí giao hàng tự động.
+                                </p>
+                            )}
+                        </div>
+
                         <div className="flex flex-col gap-sm border-b border-outline-variant pb-md mb-md">
                             <div className="flex justify-between text-secondary font-body-md">
                                 <span>Tạm tính</span>
@@ -213,8 +287,13 @@ const CartDetailPage = () => {
                             </div>
                             <div className="flex justify-between text-secondary font-body-md">
                                 <span>Phí vận chuyển</span>
-                                <span>{formatCurrency(cartItems.length > 0 ? shippingFee : 0)}</span>
+                                <span>
+                                    {shippingFeeLoading ? "Đang tính..." : formatCurrency(cartItems.length > 0 ? shippingFee : 0)}
+                                </span>
                             </div>
+                            {shippingFeeError && (
+                                <p className="text-body-sm text-error">{shippingFeeError}</p>
+                            )}
                             <div className="flex justify-between text-error font-label-sm">
                                 <span>Mã giảm giá (LUXE10)</span>
                                 <span>-{formatCurrency(discount)}</span>
@@ -267,6 +346,13 @@ const CartDetailPage = () => {
                     </div>
                 </aside>
             </div>
+
+            <AddressSelectionModal
+                open={addressModalOpen}
+                selectedAddressId={selectedAddress?.id}
+                onClose={() => setAddressModalOpen(false)}
+                onSelect={setSelectedAddress}
+            />
         </main>
     );
 };
