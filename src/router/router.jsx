@@ -8,6 +8,7 @@ import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 import HomePage from "../pages/customer/HomePage";
 import ProductListPage from "../pages/customer/ProductListPage";
 import ProductDetailPage from "../pages/customer/ProductDetailPage";
+import CartDetailPage from "../pages/customer/CartDetailPage";
 
 const router = createBrowserRouter([
     {
@@ -25,6 +26,10 @@ const router = createBrowserRouter([
             {
                 path: "products/:id",
                 element: <ProductDetailPage />
+            },
+            {
+                path: "cart",
+                element: <CartDetailPage />
             },
             {
                 path: "login",

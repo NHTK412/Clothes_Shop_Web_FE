@@ -60,8 +60,9 @@ const ClientHeader = () => {
                 <div className="relative flex items-center gap-sm">
                     {isAuthenticated ? (
                         <>
-                            <button
-                                className="flex items-center gap-xs p-xs text-primary transition-transform active:scale-95 duration-150">
+                            <Link
+                                className="flex items-center gap-xs p-xs text-primary transition-transform active:scale-95 duration-150"
+                                to="/cart">
                                 <span className="relative flex">
                                     <span className="material-symbols-outlined">shopping_cart</span>
                                     <span className="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-error px-1 text-[11px] font-bold leading-none text-on-error">
@@ -69,7 +70,7 @@ const ClientHeader = () => {
                                     </span>
                                 </span>
                                 <span className="hidden lg:inline font-label-md text-label-md">Giỏ hàng</span>
-                            </button>
+                            </Link>
                             <div className="group relative">
                             <button
                                 className="flex items-center gap-xs p-xs text-primary transition-transform active:scale-95 duration-150"
