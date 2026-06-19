@@ -1,11 +1,15 @@
 /* eslint-disable no-useless-assignment */
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import { notification } from "antd";
+import Cookies from "js-cookie";
 import productsService from "../../services/ProductsService";
+import CartService from "../../services/CartService";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,6 +17,7 @@ export default function ProductDetailPage() {
   const [selectedSize, setSelectedSize] = useState("");
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
+  const [addingToCart, setAddingToCart] = useState(false);
   const normalizeSize = (str) => {
     if (!str) return null;
     const s = String(str).toLowerCase().trim();
@@ -90,6 +95,43 @@ export default function ProductDetailPage() {
   if (!product) return <div className="p-12">Không tìm thấy sản phẩm.</div>;
 
   const variants = product.variants || [];
+
+  const handleAddToCart = async () => {
+    const token = Cookies.get("access_token");
+    if (!token) {
+      notification.warning({
+        message: "Vui lòng đăng nhập",
+        description: "Bạn cần đăng nhập trước khi thêm sản phẩm vào giỏ hàng.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!selectedVariant?.id) {
+      notification.warning({
+        message: "Chọn phân loại",
+        description: "Vui lòng chọn màu sắc và kích cỡ trước khi thêm vào giỏ hàng.",
+      });
+      return;
+    }
+
+    try {
+      setAddingToCart(true);
+      await CartService.addItem(selectedVariant.id, quantity);
+      window.dispatchEvent(new Event("cart:updated"));
+      notification.success({
+        message: "Đã thêm vào giỏ hàng",
+        description: "Sản phẩm đã được thêm vào giỏ hàng của bạn.",
+      });
+    } catch (e) {
+      notification.error({
+        message: "Không thể thêm vào giỏ hàng",
+        description: e?.response?.data?.message || "Vui lòng thử lại sau.",
+      });
+    } finally {
+      setAddingToCart(false);
+    }
+  };
 
   // derive available sizes and colors from variants' attribute_values
   const sizeSet = new Map();
@@ -279,7 +321,13 @@ export default function ProductDetailPage() {
               </button>
             </div>
 
-            <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-md flex-1 md:flex-initial">Thêm vào giỏ hàng</button>
+            <button
+              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-8 py-3 rounded-md flex-1 md:flex-initial"
+              type="button"
+              disabled={addingToCart}
+              onClick={handleAddToCart}>
+              {addingToCart ? "Đang thêm..." : "Thêm vào giỏ hàng"}
+            </button>
 
             <button className="border p-3 rounded-md">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor">

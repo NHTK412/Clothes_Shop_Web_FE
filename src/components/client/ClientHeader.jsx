@@ -28,6 +28,11 @@ const ClientHeader = () => {
         };
 
         fetchCartItemsCount();
+        window.addEventListener("cart:updated", fetchCartItemsCount);
+
+        return () => {
+            window.removeEventListener("cart:updated", fetchCartItemsCount);
+        };
     }, [location.pathname]);
 
     const handleLogout = () => {
