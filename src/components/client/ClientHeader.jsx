@@ -1,6 +1,29 @@
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import Cookies from "js-cookie";
+import CartService from "../../services/CartService";
 
 const ClientHeader = () => {
+    const [cartItemsCount, setCartItemsCount] = useState(0);
+
+    useEffect(() => {
+        const fetchCartItemsCount = async () => {
+            const token = Cookies.get("access_token");
+            if (!token) {
+                setCartItemsCount(0);
+                return;
+            }
+
+            try {
+                const count = await CartService.getItemsCount();
+                setCartItemsCount(Number(count) || 0);
+            } catch {
+                setCartItemsCount(0);
+            }
+        };
+
+        fetchCartItemsCount();
+    }, []);
 
     return (
         <header className="bg-surface-container-lowest border-b border-outline-variant sticky top-0 z-50">
@@ -20,7 +43,12 @@ const ClientHeader = () => {
                 <div className="flex items-center gap-sm">
                     <button
                         className="flex items-center gap-xs p-xs text-primary transition-transform active:scale-95 duration-150">
-                        <span className="material-symbols-outlined">shopping_cart</span>
+                        <span className="relative flex">
+                            <span className="material-symbols-outlined">shopping_cart</span>
+                            <span className="absolute -top-2 -right-2 flex h-5 min-w-5 items-center justify-center rounded-full bg-error px-1 text-[11px] font-bold leading-none text-on-error">
+                                {cartItemsCount > 99 ? "99+" : cartItemsCount}
+                            </span>
+                        </span>
                         <span className="hidden lg:inline font-label-md text-label-md">Giỏ hàng</span>
                     </button>
                     <button
