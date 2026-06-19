@@ -18,6 +18,13 @@ const CartService = {
         });
         return response?.data ?? response;
     },
+
+    async updateItemQuantity(cartItemId, quantity) {
+        const response = await api.put(`/cart/items/${cartItemId}`, {
+            quantity,
+        });
+        return response?.data?.items ?? response?.items ?? [];
+    },
 };
 
 export default CartService;

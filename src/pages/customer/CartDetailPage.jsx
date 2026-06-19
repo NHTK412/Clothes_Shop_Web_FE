@@ -33,6 +33,7 @@ const CartDetailPage = () => {
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [updatingItemId, setUpdatingItemId] = useState(null);
 
     useEffect(() => {
         let mounted = true;
@@ -68,16 +69,23 @@ const CartDetailPage = () => {
     const discount = Math.round(subtotal * discountRate);
     const total = Math.max(subtotal + shippingFee - discount, 0);
 
-    const updateQuantity = (itemId, nextQuantity) => {
-        setCartItems((items) =>
-            items.map((item) =>
-                item.id === itemId ? { ...item, quantity: Math.max(1, nextQuantity) } : item
-            )
-        );
+    const updateQuantity = async (itemId, nextQuantity) => {
+        setUpdatingItemId(itemId);
+        setError("");
+
+        try {
+            const items = await CartService.updateItemQuantity(itemId, nextQuantity);
+            setCartItems((items || []).map(normalizeCartItem));
+            window.dispatchEvent(new Event("cart:updated"));
+        } catch (e) {
+            setError(e?.response?.data?.message || "Không thể cập nhật số lượng. Vui lòng thử lại sau.");
+        } finally {
+            setUpdatingItemId(null);
+        }
     };
 
     const removeItem = (itemId) => {
-        setCartItems((items) => items.filter((item) => item.id !== itemId));
+        updateQuantity(itemId, 0);
     };
 
     return (
@@ -117,7 +125,8 @@ const CartDetailPage = () => {
                                                 {item.name}
                                             </h3>
                                             <button
-                                                className="text-outline hover:text-error transition-colors"
+                                                className="text-outline hover:text-error disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                disabled={updatingItemId === item.id}
                                                 type="button"
                                                 onClick={() => removeItem(item.id)}>
                                                 <span className="material-symbols-outlined">close</span>
@@ -137,7 +146,8 @@ const CartDetailPage = () => {
                                     <div className="flex justify-between items-end mt-md">
                                         <div className="flex items-center border border-outline-variant bg-surface-container-low">
                                             <button
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-outline-variant transition-colors"
+                                                className="w-8 h-8 flex items-center justify-center hover:bg-outline-variant disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                disabled={updatingItemId === item.id}
                                                 type="button"
                                                 onClick={() => updateQuantity(item.id, item.quantity - 1)}>
                                                 -
@@ -149,7 +159,8 @@ const CartDetailPage = () => {
                                                 value={item.quantity}
                                             />
                                             <button
-                                                className="w-8 h-8 flex items-center justify-center hover:bg-outline-variant transition-colors"
+                                                className="w-8 h-8 flex items-center justify-center hover:bg-outline-variant disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                                disabled={updatingItemId === item.id}
                                                 type="button"
                                                 onClick={() => updateQuantity(item.id, item.quantity + 1)}>
                                                 +
