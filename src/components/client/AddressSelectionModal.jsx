@@ -2,11 +2,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import AddressService from "../../services/AddressService";
 
 const emptyForm = {
-    address_code: "",
     province_id: "",
     province_name: "",
-    district_id: "",
-    district_name: "",
     ward_code: "",
     ward_name: "",
     specific_address: "",
@@ -14,6 +11,15 @@ const emptyForm = {
     phone: "",
     is_default: false,
 };
+
+const formatAddress = (address) => (
+    [
+        address?.specific_address,
+        address?.ward_name,
+        address?.district_name,
+        address?.province_name,
+    ].filter(Boolean).join(", ")
+);
 
 const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) => {
     const [addresses, setAddresses] = useState([]);
@@ -25,7 +31,6 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
     const [editingAddressId, setEditingAddressId] = useState(null);
     const [form, setForm] = useState(emptyForm);
     const [provinces, setProvinces] = useState([]);
-    const [districts, setDistricts] = useState([]);
     const [wards, setWards] = useState([]);
 
     const selectedAddress = useMemo(
@@ -71,18 +76,10 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
     useEffect(() => {
         if (!form.province_id) return;
 
-        AddressService.getDistricts(form.province_id)
-            .then(setDistricts)
-            .catch(() => setDistricts([]));
-    }, [form.province_id]);
-
-    useEffect(() => {
-        if (!form.district_id) return;
-
-        AddressService.getWards(form.district_id)
+        AddressService.getWards(form.province_id)
             .then(setWards)
             .catch(() => setWards([]));
-    }, [form.district_id]);
+    }, [form.province_id]);
 
     const updateForm = (field, value) => {
         setForm((current) => ({ ...current, [field]: value }));
@@ -92,7 +89,6 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
         setEditingAddressId(null);
         setForm({
             ...emptyForm,
-            address_code: `ADDR-${Date.now()}`,
             is_default: addresses.length === 0,
         });
         setFormOpen(true);
@@ -101,11 +97,8 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
     const openEditForm = (address) => {
         setEditingAddressId(address.id);
         setForm({
-            address_code: address.address_code || "",
             province_id: address.province_id || "",
             province_name: address.province_name || "",
-            district_id: address.district_id || "",
-            district_name: address.district_name || "",
             ward_code: address.ward_code || "",
             ward_name: address.ward_name || "",
             specific_address: address.specific_address || "",
@@ -123,22 +116,6 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
             ...current,
             province_id: province?.province_id || "",
             province_name: province?.province_name || "",
-            district_id: "",
-            district_name: "",
-            ward_code: "",
-            ward_name: "",
-        }));
-        setDistricts([]);
-        setWards([]);
-    };
-
-    const handleDistrictChange = (districtId) => {
-        const district = districts.find((item) => String(item.district_id) === String(districtId));
-
-        setForm((current) => ({
-            ...current,
-            district_id: district?.district_id || "",
-            district_name: district?.district_name || "",
             ward_code: "",
             ward_name: "",
         }));
@@ -146,12 +123,14 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
     };
 
     const handleWardChange = (wardCode) => {
-        const ward = wards.find((item) => String(item.ward_code) === String(wardCode));
+        const ward = wards.find((item) => String(item.ward_code || item.WardCode) === String(wardCode));
 
         setForm((current) => ({
             ...current,
-            ward_code: ward?.ward_code || "",
-            ward_name: ward?.ward_name || "",
+            province_id: ward?.province_id || ward?.ProvinceID || current.province_id || "",
+            province_name: ward?.province_name || ward?.ProvinceName || current.province_name || "",
+            ward_code: ward?.ward_code || ward?.WardCode || "",
+            ward_name: ward?.ward_name || ward?.WardName || "",
         }));
     };
 
@@ -162,9 +141,13 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
 
         try {
             const payload = {
-                ...form,
+                ward_code: `${form.ward_code}`,
+                ward_name: form.ward_name,
                 province_id: Number(form.province_id),
-                district_id: Number(form.district_id),
+                province_name: form.province_name,
+                specific_address: form.specific_address,
+                full_name: form.full_name,
+                phone: form.phone,
                 is_default: Boolean(form.is_default),
             };
 
@@ -294,7 +277,7 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
                                                     )}
                                                 </div>
                                                 <p className="mt-xs text-body-sm text-secondary">
-                                                    {address.specific_address}, {address.ward_name}, {address.district_name}, {address.province_name}
+                                                    {formatAddress(address)}
                                                 </p>
                                                 <div className="mt-sm flex flex-wrap gap-xs">
                                                     <button
@@ -385,16 +368,6 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
                                 </div>
 
                                 <label className="text-label-sm text-secondary">
-                                    Mã địa chỉ
-                                    <input
-                                        required
-                                        className="mt-xs w-full rounded-md border border-outline-variant bg-surface p-sm text-body-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
-                                        value={form.address_code}
-                                        onChange={(event) => updateForm("address_code", event.target.value)}
-                                    />
-                                </label>
-
-                                <label className="text-label-sm text-secondary">
                                     Tỉnh/Thành phố
                                     <select
                                         required
@@ -411,34 +384,17 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
                                 </label>
 
                                 <label className="text-label-sm text-secondary">
-                                    Quận/Huyện
-                                    <select
-                                        required
-                                        className="mt-xs w-full rounded-md border border-outline-variant bg-surface p-sm text-body-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60"
-                                        disabled={!form.province_id}
-                                        value={form.district_id}
-                                        onChange={(event) => handleDistrictChange(event.target.value)}>
-                                        <option value="">Chọn quận/huyện</option>
-                                        {districts.map((district) => (
-                                            <option key={district.district_id} value={district.district_id}>
-                                                {district.district_name}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </label>
-
-                                <label className="text-label-sm text-secondary">
                                     Phường/Xã
                                     <select
                                         required
                                         className="mt-xs w-full rounded-md border border-outline-variant bg-surface p-sm text-body-sm outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15 disabled:opacity-60"
-                                        disabled={!form.district_id}
+                                        disabled={!form.province_id}
                                         value={form.ward_code}
                                         onChange={(event) => handleWardChange(event.target.value)}>
                                         <option value="">Chọn phường/xã</option>
                                         {wards.map((ward) => (
-                                            <option key={ward.ward_code} value={ward.ward_code}>
-                                                {ward.ward_name}
+                                            <option key={ward.ward_code || ward.WardCode} value={ward.ward_code || ward.WardCode}>
+                                                {ward.ward_name || ward.WardName}
                                             </option>
                                         ))}
                                     </select>
@@ -484,7 +440,7 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
                                 <p className="font-label-md text-label-md text-on-surface">{selectedAddress.full_name}</p>
                                 <p className="mt-xs text-body-sm text-secondary">{selectedAddress.phone}</p>
                                 <p className="mt-sm text-body-md text-on-surface">
-                                    {selectedAddress.specific_address}, {selectedAddress.ward_name}, {selectedAddress.district_name}, {selectedAddress.province_name}
+                                    {formatAddress(selectedAddress)}
                                 </p>
                             </div>
                         ) && (

@@ -41,20 +41,20 @@ const AddressService = {
         return getItems(response);
     },
 
-    async getWards(districtId) {
-        if (!districtId) return [];
+    async getWards(provinceId) {
+        if (!provinceId) return [];
         const response = await api.get("/ghn/wards", {
-            params: { district_id: districtId },
+            params: { province_id: provinceId },
         });
         return getItems(response);
     },
 
-    async getShippingFee(toWardCode, toDistrictId) {
-        if (!toWardCode || !toDistrictId) return 0;
+    async getShippingFee(toWardIdV2, toDistrictId) {
+        if (!toWardIdV2 || !toDistrictId) return 0;
 
         const response = await api.get("/ghn/shipping-fee", {
             params: {
-                to_ward_code: toWardCode,
+                to_ward_id_v2: toWardIdV2,
                 to_district_id: toDistrictId,
             },
         });

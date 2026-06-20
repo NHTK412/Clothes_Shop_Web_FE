@@ -12,6 +12,15 @@ const getAttributeDisplay = (attributes = [], type) => (
     attributes.find((attribute) => attribute.type === type)?.display_value || ""
 );
 
+const formatAddress = (address) => (
+    [
+        address?.specific_address,
+        address?.ward_name,
+        address?.district_name,
+        address?.province_name,
+    ].filter(Boolean).join(", ")
+);
+
 const normalizeCartItem = (item) => {
     const price = Number(item.discount_price ?? item.original_price ?? 0);
     const originalPrice = Number(item.original_price ?? price);
@@ -89,9 +98,16 @@ const CartDetailPage = () => {
             setShippingFeeError("");
 
             try {
+                const wardIdV2 = selectedAddress.ward_code;
+                const districtId = selectedAddress.district_id ?? selectedAddress.province_id;
+
+                if (!wardIdV2 || !districtId) {
+                    throw new Error("Thiếu thông tin phường/xã hoặc khu vực giao hàng để tính phí vận chuyển.");
+                }
+
                 const fee = await AddressService.getShippingFee(
-                    selectedAddress.ward_code,
-                    selectedAddress.district_id
+                    wardIdV2,
+                    districtId
                 );
 
                 if (!mounted) return;
@@ -99,7 +115,7 @@ const CartDetailPage = () => {
             } catch (e) {
                 if (!mounted) return;
                 setShippingFee(0);
-                setShippingFeeError(e?.response?.data?.message || "Không thể tính phí vận chuyển.");
+                setShippingFeeError(e?.response?.data?.message || e?.message || "Không thể tính phí vận chuyển.");
             } finally {
                 if (mounted) setShippingFeeLoading(false);
             }
@@ -268,10 +284,7 @@ const CartDetailPage = () => {
                                     <p className="font-label-md text-on-surface">
                                         {selectedAddress.full_name} - {selectedAddress.phone}
                                     </p>
-                                    <p className="mt-1">
-                                        {selectedAddress.specific_address}, {selectedAddress.ward_name},{" "}
-                                        {selectedAddress.district_name}, {selectedAddress.province_name}
-                                    </p>
+                                    <p className="mt-1">{formatAddress(selectedAddress)}</p>
                                 </div>
                             ) : (
                                 <p className="text-body-sm text-secondary">
