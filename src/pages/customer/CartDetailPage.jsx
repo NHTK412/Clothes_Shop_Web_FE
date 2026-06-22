@@ -4,9 +4,7 @@ import CartService from "../../services/CartService";
 import AddressService from "../../services/AddressService";
 import AddressSelectionModal from "../../components/client/AddressSelectionModal";
 
-const discountRate = 0.1;
-
-const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")}₫`;
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
 
 const getAttributeDisplay = (attributes = [], type) => (
     attributes.find((attribute) => attribute.type === type)?.display_value || ""
@@ -22,8 +20,9 @@ const formatAddress = (address) => (
 );
 
 const normalizeCartItem = (item) => {
-    const price = Number(item.discount_price ?? item.original_price ?? 0);
-    const originalPrice = Number(item.original_price ?? price);
+    const originalPrice = Number(item.price ?? item.unit_price ?? item.original_price ?? 0);
+    const discountAmount = Number(item.discount_price ?? item.unit_discount_price ?? 0);
+    const price = Math.max(originalPrice - discountAmount, 0);
 
     return {
         id: item.cart_item_id,
@@ -34,6 +33,7 @@ const normalizeCartItem = (item) => {
         material: getAttributeDisplay(item.attributes, "material"),
         price,
         originalPrice,
+        discountAmount,
         quantity: Number(item.quantity) || 1,
         image: item.image,
     };
@@ -102,8 +102,8 @@ const CartDetailPage = () => {
         () => cartItems.reduce((total, item) => total + item.price * item.quantity, 0),
         [cartItems]
     );
-    const discount = Math.round(subtotal * discountRate);
-    const total = Math.max(subtotal + shippingFee - discount, 0);
+    const discount = 0;
+    const total = Math.max(subtotal + shippingFee, 0);
 
     useEffect(() => {
         let mounted = true;
@@ -341,10 +341,12 @@ const CartDetailPage = () => {
                             {shippingFeeError && (
                                 <p className="text-body-sm text-error">{shippingFeeError}</p>
                             )}
+                            {discount > 0 && (
                             <div className="flex justify-between text-error font-label-sm">
                                 <span>Mã giảm giá (LUXE10)</span>
                                 <span>-{formatCurrency(discount)}</span>
                             </div>
+                            )}
                         </div>
 
                         <div className="flex justify-between items-center mb-lg">
@@ -354,6 +356,7 @@ const CartDetailPage = () => {
                             </span>
                         </div>
 
+                        {discount > 0 && (
                         <div className="mb-lg">
                             <label className="block text-label-sm text-secondary mb-xs uppercase tracking-wider">
                                 Mã giảm giá
@@ -371,6 +374,7 @@ const CartDetailPage = () => {
                                 </button>
                             </div>
                         </div>
+                        )}
 
                         <button
                             className="w-full bg-primary text-on-primary font-label-md py-md shadow-sm hover:bg-on-primary-fixed-variant transition-all active:scale-[0.98] flex items-center justify-center gap-sm disabled:opacity-60 disabled:cursor-not-allowed"

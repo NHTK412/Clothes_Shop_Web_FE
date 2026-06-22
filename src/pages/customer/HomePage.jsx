@@ -82,7 +82,7 @@ export default function HomePage() {
 
 	return (
 		<div>
-			
+
 
 			<main>
 				{/* Hero */}
@@ -213,7 +213,14 @@ export default function HomePage() {
 										<div className="p-sm text-center">
 											<p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">{p.category}</p>
 											<h3 className="font-headline-sm text-headline-sm text-on-surface truncate">{p.name}</h3>
-											<p className="font-body-md text-body-md font-bold text-primary mt-2">{p.priceDisplay}</p>
+											<div className="mt-2">
+												{p.discountAmount > 0 && p.originalPrice > p.price && (
+													<p className="text-body-sm text-secondary line-through">
+														{Number(p.originalPrice || 0).toLocaleString("vi-VN")} VNĐ
+													</p>
+												)}
+												<p className="font-body-md text-body-md font-bold text-primary">{p.priceDisplay}</p>
+											</div>
 										</div>
 									</Link>
 								))}
@@ -243,16 +250,15 @@ export default function HomePage() {
 					<div className="max-w-max-width mx-auto px-gutter text-center">
 						<h3 className="font-headline-md text-headline-md text-on-surface mb-sm">Trải nghiệm phong cách LUXE</h3>
 						<p className="font-body-md text-body-md text-on-surface-variant mb-lg  mx-auto">Đăng ký để nhận thông tin về các bộ sưu tập giới hạn và ưu đãi độc quyền sớm nhất.</p>
-						<form className="flex flex-col md:flex-row gap-xs max-w-md mx-auto" onSubmit={(e)=>{e.preventDefault(); alert('Cảm ơn!')}}>
-							<input className="flex-grow bg-white border border-outline-variant rounded-lg px-md py-sm focus:outline-none focus:border-primary transition-colors font-body-sm text-body-sm" placeholder="Email của bạn" type="email" />
+						<form className="flex flex-col md:flex-row gap-xs mx-auto" onSubmit={(e) => { e.preventDefault(); alert('Cảm ơn!') }}>
+							<input className="flex-1 bg-white border border-outline-variant rounded-lg px-md py-sm focus:outline-none focus:border-primary transition-colors font-body-sm text-body-sm" placeholder="Email của bạn" type="email" />
 							<button className="bg-primary text-white font-label-md text-label-md px-md py-sm rounded-lg whitespace-nowrap hover:bg-on-primary-fixed-variant transition-colors" type="submit">Đăng ký</button>
 						</form>
 					</div>
 				</section>
 			</main>
 
-			
+
 		</div>
 	);
 }
-

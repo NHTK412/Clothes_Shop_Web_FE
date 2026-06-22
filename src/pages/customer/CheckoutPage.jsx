@@ -1,7 +1,9 @@
 import { Link, useLocation } from "react-router-dom";
 import { useState } from "react";
+import { notification } from "antd";
+import OrderService from "../../services/OrderService";
 
-const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")}₫`;
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
 
 const formatAddress = (address) => (
     [
@@ -14,17 +16,73 @@ const formatAddress = (address) => (
 
 const CheckoutPage = () => {
     const { state } = useLocation();
-    const [paymentMethod, setPaymentMethod] = useState("cod");
+    const [paymentMethod, setPaymentMethod] = useState("COD");
     const [note, setNote] = useState("");
+    const [placingOrder, setPlacingOrder] = useState(false);
+    const [createdOrder, setCreatedOrder] = useState(null);
+    const [checkoutStep, setCheckoutStep] = useState("checkout");
 
     const cartItems = state?.cartItems || [];
     const selectedAddress = state?.selectedAddress || null;
     const subtotal = Number(state?.subtotal || 0);
     const shippingFee = Number(state?.shippingFee || 0);
-    const discount = Number(state?.discount || 0);
+    const discount = 0;
     const total = Number(state?.total || 0);
 
     const itemCount = cartItems.reduce((count, item) => count + Number(item.quantity || 0), 0);
+
+    const handleCreateOrder = async () => {
+        if (!selectedAddress?.id) {
+            notification.warning({
+                message: "Chưa chọn địa chỉ",
+                description: "Vui lòng quay lại giỏ hàng để chọn địa chỉ giao hàng.",
+            });
+            return;
+        }
+
+        setPlacingOrder(true);
+
+        try {
+            const order = await OrderService.createOrder({
+                address_id: selectedAddress.id,
+                gift_code: null,
+                payment_method: paymentMethod,
+            });
+
+            if (paymentMethod === "VNPAY") {
+                const payment = await OrderService.createVnpayPaymentUrl({
+                    order_id: order.id,
+                    bank_code: "VNBANK",
+                    locale: "vn",
+                });
+
+                if (!payment?.payment_url) {
+                    throw new Error("Không nhận được liên kết thanh toán VNPay.");
+                }
+
+                notification.info({
+                    message: "Chuyển sang VNPay",
+                    description: "Bạn sẽ được chuyển tới cổng thanh toán VNPay.",
+                });
+                window.location.assign(payment.payment_url);
+                return;
+            }
+
+            setCreatedOrder(order);
+            setCheckoutStep("complete");
+            notification.success({
+                message: "Tạo đơn hàng thành công",
+                description: `Đơn hàng #${order?.id || ""} đã được tạo.`,
+            });
+        } catch (e) {
+            notification.error({
+                message: "Không thể tạo đơn hàng",
+                description: e?.response?.data?.message || e?.message || "Vui lòng thử lại sau.",
+            });
+        } finally {
+            setPlacingOrder(false);
+        }
+    };
 
     if (!cartItems.length) {
         return (
@@ -64,9 +122,9 @@ const CheckoutPage = () => {
                         Giỏ hàng
                     </Link>
                     <span className="material-symbols-outlined text-base">chevron_right</span>
-                    <span className="font-label-md text-primary">Thanh toán</span>
+                    <span className={checkoutStep === "checkout" ? "font-label-md text-primary" : ""}>Thanh toán</span>
                     <span className="material-symbols-outlined text-base">chevron_right</span>
-                    <span>Hoàn tất</span>
+                    <span className={checkoutStep === "complete" ? "font-label-md text-primary" : ""}>Hoàn tất</span>
                 </div>
             </div>
 
@@ -114,17 +172,17 @@ const CheckoutPage = () => {
                         <div className="grid grid-cols-1 gap-sm sm:grid-cols-2">
                             <label
                                 className={`cursor-pointer rounded-md border p-sm transition-colors ${
-                                    paymentMethod === "cod"
+                                    paymentMethod === "COD"
                                         ? "border-primary bg-primary/5"
                                         : "border-outline-variant bg-surface"
                                 }`}>
                                 <div className="flex items-start gap-sm">
                                     <input
-                                        checked={paymentMethod === "cod"}
+                                        checked={paymentMethod === "COD"}
                                         className="mt-1 accent-primary"
                                         name="payment_method"
                                         type="radio"
-                                        onChange={() => setPaymentMethod("cod")}
+                                        onChange={() => setPaymentMethod("COD")}
                                     />
                                     <div>
                                         <p className="font-label-md text-label-md text-on-surface">
@@ -139,17 +197,17 @@ const CheckoutPage = () => {
 
                             <label
                                 className={`cursor-pointer rounded-md border p-sm transition-colors ${
-                                    paymentMethod === "bank"
+                                    paymentMethod === "VNPAY"
                                         ? "border-primary bg-primary/5"
                                         : "border-outline-variant bg-surface"
                                 }`}>
                                 <div className="flex items-start gap-sm">
                                     <input
-                                        checked={paymentMethod === "bank"}
+                                        checked={paymentMethod === "VNPAY"}
                                         className="mt-1 accent-primary"
                                         name="payment_method"
                                         type="radio"
-                                        onChange={() => setPaymentMethod("bank")}
+                                        onChange={() => setPaymentMethod("VNPAY")}
                                     />
                                     <div>
                                         <p className="font-label-md text-label-md text-on-surface">
@@ -176,6 +234,29 @@ const CheckoutPage = () => {
                             onChange={(event) => setNote(event.target.value)}
                         />
                     </div>
+
+                    {createdOrder && (
+                        <div className="border border-primary bg-primary/5 p-md">
+                            <h2 className="flex items-center gap-xs font-headline-sm text-headline-sm text-primary">
+                                <span className="material-symbols-outlined">check_circle</span>
+                                Đơn hàng đã được tạo
+                            </h2>
+                            <div className="mt-sm grid grid-cols-1 gap-sm text-body-sm text-secondary sm:grid-cols-2">
+                                <p>
+                                    Mã đơn: <span className="font-label-md text-on-surface">#{createdOrder.id}</span>
+                                </p>
+                                <p>
+                                    Trạng thái: <span className="font-label-md text-on-surface">{createdOrder.status}</span>
+                                </p>
+                                <p>
+                                    Mã GHN: <span className="font-label-md text-on-surface">{createdOrder.ghn_order_code || "Đang cập nhật"}</span>
+                                </p>
+                                <p>
+                                    Thanh toán: <span className="font-label-md text-on-surface">{createdOrder.payment?.method}</span>
+                                </p>
+                            </div>
+                        </div>
+                    )}
                 </section>
 
                 <aside className="lg:col-span-4">
@@ -217,10 +298,12 @@ const CheckoutPage = () => {
                                 <span>Phí vận chuyển</span>
                                 <span>{formatCurrency(shippingFee)}</span>
                             </div>
+                            {discount > 0 && (
                             <div className="flex justify-between text-label-sm text-error">
                                 <span>Giảm giá</span>
                                 <span>-{formatCurrency(discount)}</span>
                             </div>
+                            )}
                         </div>
 
                         <div className="my-md flex items-center justify-between">
@@ -230,15 +313,18 @@ const CheckoutPage = () => {
 
                         <button
                             className="flex w-full items-center justify-center gap-xs bg-primary py-md font-label-md text-on-primary shadow-sm transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
-                            disabled={!selectedAddress}
-                            type="button">
-                            <span>Đặt hàng</span>
+                            disabled={!selectedAddress || placingOrder || Boolean(createdOrder)}
+                            type="button"
+                            onClick={handleCreateOrder}>
+                            <span>{placingOrder ? "Đang tạo đơn..." : createdOrder ? "Đã tạo đơn hàng" : "Đặt hàng"}</span>
                             <span className="material-symbols-outlined">check_circle</span>
                         </button>
 
-                        <p className="mt-sm text-center text-body-sm text-secondary">
-                            Chưa gọi API đặt hàng. Logic xử lý sẽ được nối ở bước tiếp theo.
-                        </p>
+                        {note && (
+                            <p className="mt-sm text-center text-body-sm text-secondary">
+                                Ghi chú sẽ được giữ ở giao diện checkout. API hiện tại chưa nhận trường ghi chú.
+                            </p>
+                        )}
                     </div>
                 </aside>
             </div>

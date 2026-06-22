@@ -200,32 +200,31 @@ export default function ProductDetailPage() {
 
           {/* Price block: prefer variant price if selected, show original+discount when both available */}
           {(() => {
-            const formatCurrency = (n) => Number(n || 0).toLocaleString('vi-VN') + 'đ';
+            const formatCurrency = (n) => `${Number(n || 0).toLocaleString('vi-VN')} VNĐ`;
             const pv = selectedVariant || {};
-            // originalPrice: prefer explicit original/regular fields, fall back to price
             const originalPrice = Number(
-              pv.original_price ?? pv.regular_price ?? pv.price ?? product.original_price ?? product.regular_price ?? product.list_price ?? product.price ?? 0
+              pv.price ?? pv.unit_price ?? pv.original_price ?? pv.regular_price ?? product.originalPrice ?? product.price ?? 0
             );
-            // promoPrice: prefer discount/sale, else variant/product price
-            const promoPrice = Number(
-              pv.discount_price ?? pv.sale_price ?? pv.price ?? product.discount_price ?? product.sale_price ?? product.price ?? 0
+            const discountAmount = Number(
+              pv.discount_price ?? pv.unit_discount_price ?? product.discountAmount ?? 0
             );
-            const showBoth = originalPrice > 0 && promoPrice > 0 && promoPrice < originalPrice;
+            const finalPrice = Math.max(originalPrice - discountAmount, 0);
+            const showBoth = originalPrice > 0 && discountAmount > 0 && finalPrice < originalPrice;
             if (showBoth) {
               return (
                 <div className="mb-md">
                   <div className="flex items-baseline gap-3">
                     <div className="text-on-surface-variant line-through ">{formatCurrency(originalPrice)}</div>
-                    <div className=" text-red-500 font-bold text-3xl md:text-4xl">{formatCurrency(promoPrice)}</div>
+                    <div className=" text-red-500 font-bold text-3xl md:text-4xl">{formatCurrency(finalPrice)}</div>
                   </div>
                   <div className="text-sm text-on-surface-variant mt-2">Chưa có đánh giá</div>
                 </div>
               );
             }
-            const display = promoPrice || originalPrice || 0;
+            const display = finalPrice || originalPrice || 0;
             return (
               <div className="mb-md">
-                <div className="font-bold text-3xl md:text-4xl">{product.priceDisplay ?? formatCurrency(display)}</div>
+                <div className="font-bold text-3xl md:text-4xl">{formatCurrency(display)}</div>
                 <div className="text-sm text-on-surface-variant mt-2">Chưa có đánh giá</div>
               </div>
             );

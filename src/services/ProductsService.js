@@ -1,4 +1,4 @@
-/* eslint-disable no-empty */
+﻿/* eslint-disable no-empty */
 /* eslint-disable no-unused-vars */
 /* eslint-disable no-undef */
 import api from "../configs/AxiosConfig";
@@ -7,15 +7,52 @@ import api from "../configs/AxiosConfig";
 const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000/api").replace(/\/api\/?$/, "");
 
 const fallbackCategories = [
-  { id: 1, name: "Thời trang Nữ", image: "https://picsum.photos/seed/cat-1/1200/800" },
-  { id: 2, name: "Thời trang Nam", image: "https://picsum.photos/seed/cat-2/1200/800" },
-  { id: 3, name: "Phụ kiện", image: "https://picsum.photos/seed/cat-3/1200/800" },
+  { id: 1, name: "Thá»i trang Ná»¯", image: "https://picsum.photos/seed/cat-1/1200/800" },
+  { id: 2, name: "Thá»i trang Nam", image: "https://picsum.photos/seed/cat-2/1200/800" },
+  { id: 3, name: "Phá»¥ kiá»‡n", image: "https://picsum.photos/seed/cat-3/1200/800" },
 ];
 
 const fallbackProducts = [
-  { id: 1, name: "Sản phẩm mẫu 1", category: "Mẫu", price: 100000, priceDisplay: "100.000đ", image: "https://picsum.photos/seed/sample-1/800/1000" },
-  { id: 2, name: "Sản phẩm mẫu 2", category: "Mẫu", price: 200000, priceDisplay: "200.000đ", image: "https://picsum.photos/seed/sample-2/800/1000" },
+  { id: 1, name: "Sáº£n pháº©m máº«u 1", category: "Máº«u", price: 100000, priceDisplay: "100.000Ä‘", image: "https://picsum.photos/seed/sample-1/800/1000" },
+  { id: 2, name: "Sáº£n pháº©m máº«u 2", category: "Máº«u", price: 200000, priceDisplay: "200.000Ä‘", image: "https://picsum.photos/seed/sample-2/800/1000" },
 ];
+
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
+
+const getPricing = (item = {}) => {
+  const firstVariant = Array.isArray(item.variants)
+    ? item.variants[0]
+    : Array.isArray(item.product_variants)
+      ? item.product_variants[0]
+      : null;
+
+  const originalPrice = Number(
+    item.price ??
+      item.unit_price ??
+      item.original_price ??
+      item.regular_price ??
+      item.list_price ??
+      firstVariant?.price ??
+      firstVariant?.unit_price ??
+      firstVariant?.original_price ??
+      0
+  );
+  const discountAmount = Number(
+    item.discount_price ??
+      item.unit_discount_price ??
+      firstVariant?.discount_price ??
+      firstVariant?.unit_discount_price ??
+      0
+  );
+  const finalPrice = Math.max(originalPrice - discountAmount, 0);
+
+  return {
+    originalPrice,
+    discountAmount,
+    price: finalPrice,
+    priceDisplay: item.priceDisplay ?? formatCurrency(finalPrice),
+  };
+};
 
 const ProductsService = {
   async getCategories() {
@@ -61,10 +98,7 @@ const ProductsService = {
         const id = p.id ?? p._id ?? p.productId ?? null;
         const name = p.name ?? p.title ?? p.productName ?? "Untitled";
         let image = p.image ?? p.thumbnail ?? (Array.isArray(p.images) && p.images[0]) ?? p.avatar ?? (Array.isArray(p.variants) && p.variants[0]?.image) ?? "";
-        const rawPrice = (p.discount_price ?? p.price ?? p.unitPrice ?? p.priceAmount ?? null);
-        const priceNum = rawPrice != null && !isNaN(Number(rawPrice)) ? Number(rawPrice) : null;
-        const price = priceNum ?? null;
-        const priceDisplay = p.priceDisplay ?? (priceNum !== null ? priceNum.toLocaleString("vi-VN") + "đ" : p.displayPrice ?? "");
+        const pricing = getPricing(p);
         const shortDescription = p.shortDescription ?? p.excerpt ?? p.summary ?? "";
         const description = p.description ?? p.longDescription ?? "";
         const category = typeof p.category === "string" ? p.category : p.category?.name ?? (Array.isArray(p.categories) && p.categories[0]?.name) ?? p.category?.title ?? "";
@@ -74,7 +108,7 @@ const ProductsService = {
           // relative path from API - resolve against backend origin
           image = `${BACKEND_ORIGIN}/${String(image).replace(/^\/+/, "")}`;
         }
-        return { id, name, image, category, price, priceDisplay, shortDescription, description, created_at: p.created_at ?? p.createdAt ?? null };
+        return { id, name, image, category, ...pricing, shortDescription, description, created_at: p.created_at ?? p.createdAt ?? null };
       });
 
       // Do NOT return fallbackProducts when the backend explicitly returns no items.
@@ -108,11 +142,7 @@ const ProductsService = {
           (Array.isArray(p.variants) && p.variants[0]?.image) ??
           "";
 
-        // Prefer discount_price when available
-        const rawPrice = (p.discount_price ?? p.price ?? p.unitPrice ?? p.priceAmount ?? null);
-        const priceNum = rawPrice != null && !isNaN(Number(rawPrice)) ? Number(rawPrice) : null;
-        const price = priceNum ?? null;
-        const priceDisplay = p.priceDisplay ?? (priceNum !== null ? priceNum.toLocaleString("vi-VN") + "đ" : p.displayPrice ?? "");
+        const pricing = getPricing(p);
         const shortDescription = p.shortDescription ?? p.excerpt ?? p.summary ?? "";
         const description = p.description ?? p.longDescription ?? "";
         // category can be an object or array from backend
@@ -131,8 +161,7 @@ const ProductsService = {
           name,
           image,
           category,
-          price,
-          priceDisplay,
+          ...pricing,
           shortDescription,
           description,
         };
@@ -177,10 +206,7 @@ const ProductsService = {
       const idVal = p.id ?? p._id ?? p.productId ?? null;
       const name = p.name ?? p.title ?? p.productName ?? "Untitled";
       let image = p.image ?? p.thumbnail ?? (Array.isArray(p.images) && p.images[0]) ?? p.avatar ?? (Array.isArray(p.variants) && p.variants[0]?.image) ?? "";
-      const rawPrice = (p.discount_price ?? p.price ?? p.unitPrice ?? p.priceAmount ?? null);
-      const priceNum = rawPrice != null && !isNaN(Number(rawPrice)) ? Number(rawPrice) : null;
-      const price = priceNum ?? null;
-      const priceDisplay = p.priceDisplay ?? (priceNum !== null ? priceNum.toLocaleString("vi-VN") + "đ" : p.displayPrice ?? "");
+      const pricing = getPricing(p);
       const description = p.description ?? p.longDescription ?? p.summary ?? "";
       const rawVariants = Array.isArray(p.variants) ? p.variants : (p.product_variants && Array.isArray(p.product_variants) ? p.product_variants : []);
       const variants = (Array.isArray(rawVariants) ? rawVariants : []).map((v) => {
@@ -200,8 +226,7 @@ const ProductsService = {
         id: idVal,
         name,
         image,
-        price,
-        priceDisplay,
+        ...pricing,
         description,
         variants,
         categories,
@@ -214,3 +239,4 @@ const ProductsService = {
 };
 
 export default ProductsService;
+

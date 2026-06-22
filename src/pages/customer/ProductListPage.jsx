@@ -324,7 +324,14 @@ export default function ProductListPage() {
                         <div className="p-sm text-center">
                           <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">{p.category}</p>
                           <h3 className="font-headline-sm text-headline-sm text-on-surface truncate">{p.name}</h3>
-                          <p className="font-body-md text-body-md font-bold text-primary mt-2">{p.priceDisplay}</p>
+                          <div className="mt-2">
+                            {p.discountAmount > 0 && p.originalPrice > p.price && (
+                              <p className="text-body-sm text-secondary line-through">
+                                {Number(p.originalPrice || 0).toLocaleString("vi-VN")} VNĐ
+                              </p>
+                            )}
+                            <p className="font-body-md text-body-md font-bold text-primary">{p.priceDisplay}</p>
+                          </div>
                         </div>
                       </Link>
                     ))}
