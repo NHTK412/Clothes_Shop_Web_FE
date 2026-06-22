@@ -120,7 +120,6 @@ export default function HomePage() {
 					<div className="flex flex-col md:flex-row gap-gutter h-auto md:h-[600px]">
 						{Array.isArray(categories) && categories.length >= 3 ? (
 							<>
-								{/* Left large */}
 								<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
 									<img alt={categories[0].name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={categories[0].image} />
 									<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
@@ -130,7 +129,6 @@ export default function HomePage() {
 										</div>
 									</div>
 								</div>
-								{/* Right column with two stacked */}
 								<div className="flex-1 flex flex-col gap-gutter">
 									<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
 										<img alt={categories[1].name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={categories[1].image} />
@@ -153,7 +151,6 @@ export default function HomePage() {
 								</div>
 							</>
 						) : (
-							// fallback static layout for first load
 							<>
 								<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
 									<img alt="Thời trang Nữ" className="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1jv8UoPjv77YvFoh_lCRlH_8qFxfWxaocWQBEQzpNsPqfwI98JQnuSUt3k7rnTXwXH6RALIoo-ex59wJ5k_0i4cZ4QblXYqBhl3d1wla8i1JA_8w4rR31kNSlf97AGMyOSqYfbHSR4GTUMkhBytKV_xbS0Jkra-1N4aam_L_F2wSP9fqmJWzQ1nWcnM_vScMXNpUv39HvPvNPBYbJgKRt3Nt63ZZqY3hcVuCiYgB1Wl70wMctZB17quwcgDuv-qx0ZVOKnAIVj1n_" />
@@ -189,7 +186,6 @@ export default function HomePage() {
 					</div>
 				</section>
 
-				{/* Featured Products */}
 				<section className="py-xl bg-surface-container-low">
 					<div className="max-w-max-width mx-auto px-gutter">
 						<div className="flex justify-between items-end mb-lg">
@@ -226,7 +222,6 @@ export default function HomePage() {
 					</div>
 				</section>
 
-				{/* Promo Banner */}
 				<section className="py-xl">
 					<div className="max-w-max-width mx-auto px-gutter">
 						<div className="relative w-full h-[400px] rounded-2xl overflow-hidden bg-primary-container">
@@ -244,7 +239,6 @@ export default function HomePage() {
 					</div>
 				</section>
 
-				{/* Newsletter */}
 				<section className="py-xl bg-surface-container border-t border-outline-variant">
 					<div className="max-w-max-width mx-auto px-gutter text-center">
 						<h3 className="font-headline-md text-headline-md text-on-surface mb-sm">Trải nghiệm phong cách LUXE</h3>

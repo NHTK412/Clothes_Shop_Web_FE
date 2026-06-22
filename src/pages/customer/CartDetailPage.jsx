@@ -1,4 +1,4 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import CartService from "../../services/CartService";
 import AddressService from "../../services/AddressService";
@@ -40,6 +40,7 @@ const normalizeCartItem = (item) => {
 };
 
 const CartDetailPage = () => {
+    const navigate = useNavigate();
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
@@ -70,7 +71,27 @@ const CartDetailPage = () => {
             }
         };
 
+        const fetchAddressDefault = async () => {
+            setShippingFeeLoading(true);
+            try {
+                const items = await AddressService.getAddresses();
+
+                const defaultAddress = (items || []).find((address) => address.is_default);
+                if (defaultAddress && mounted) {
+                    setSelectedAddress(defaultAddress);
+                }
+            } catch (e) {
+                if (!mounted) return;
+                setError(e?.response?.data?.message || "Không thể tải giỏ hàng. Vui lòng thử lại sau.");
+                setCartItems([]);
+            }
+            finally {
+                if (mounted) setShippingFeeLoading(false);
+            }
+        }
+
         fetchCartItems();
+        fetchAddressDefault();
 
         return () => {
             mounted = false;
@@ -145,6 +166,19 @@ const CartDetailPage = () => {
 
     const removeItem = (itemId) => {
         updateQuantity(itemId, 0);
+    };
+
+    const handleCheckout = () => {
+        navigate("/checkout", {
+            state: {
+                cartItems,
+                selectedAddress,
+                subtotal,
+                shippingFee,
+                discount,
+                total,
+            },
+        });
     };
 
     return (
@@ -340,8 +374,9 @@ const CartDetailPage = () => {
 
                         <button
                             className="w-full bg-primary text-on-primary font-label-md py-md shadow-sm hover:bg-on-primary-fixed-variant transition-all active:scale-[0.98] flex items-center justify-center gap-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                            disabled={cartItems.length === 0}
-                            type="button">
+                            disabled={cartItems.length === 0 || shippingFeeLoading || !selectedAddress}
+                            type="button"
+                            onClick={handleCheckout}>
                             <span>Tiến hành thanh toán</span>
                             <span className="material-symbols-outlined">arrow_forward</span>
                         </button>

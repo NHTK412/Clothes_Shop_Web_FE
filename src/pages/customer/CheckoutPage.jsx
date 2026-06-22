@@ -1,0 +1,249 @@
+import { Link, useLocation } from "react-router-dom";
+import { useState } from "react";
+
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")}₫`;
+
+const formatAddress = (address) => (
+    [
+        address?.specific_address,
+        address?.ward_name,
+        address?.district_name,
+        address?.province_name,
+    ].filter(Boolean).join(", ")
+);
+
+const CheckoutPage = () => {
+    const { state } = useLocation();
+    const [paymentMethod, setPaymentMethod] = useState("cod");
+    const [note, setNote] = useState("");
+
+    const cartItems = state?.cartItems || [];
+    const selectedAddress = state?.selectedAddress || null;
+    const subtotal = Number(state?.subtotal || 0);
+    const shippingFee = Number(state?.shippingFee || 0);
+    const discount = Number(state?.discount || 0);
+    const total = Number(state?.total || 0);
+
+    const itemCount = cartItems.reduce((count, item) => count + Number(item.quantity || 0), 0);
+
+    if (!cartItems.length) {
+        return (
+            <main className="max-w-max-width mx-auto px-margin-mobile md:px-lg py-xl">
+                <div className="border border-outline-variant bg-surface-container-lowest p-lg text-center">
+                    <span className="material-symbols-outlined text-5xl text-primary">receipt_long</span>
+                    <h1 className="mt-sm font-headline-md text-headline-md text-on-surface">
+                        Chưa có dữ liệu thanh toán
+                    </h1>
+                    <p className="mt-xs text-body-md text-secondary">
+                        Vui lòng quay lại giỏ hàng và tiến hành thanh toán lại.
+                    </p>
+                    <Link
+                        className="mt-md inline-flex items-center gap-xs bg-primary px-md py-sm font-label-md text-on-primary"
+                        to="/cart">
+                        <span className="material-symbols-outlined">arrow_back</span>
+                        Quay lại giỏ hàng
+                    </Link>
+                </div>
+            </main>
+        );
+    }
+
+    return (
+        <main className="max-w-max-width mx-auto px-margin-mobile md:px-lg py-xl">
+            <div className="mb-lg flex flex-col gap-sm md:flex-row md:items-end md:justify-between">
+                <div>
+                    <p className="font-label-md text-label-md uppercase tracking-wider text-secondary">
+                        Thanh toán
+                    </p>
+                    <h1 className="mt-xs font-display-lg text-display-lg-mobile text-primary md:text-display-lg">
+                        Xác nhận đơn hàng
+                    </h1>
+                </div>
+                <div className="flex items-center gap-xs text-body-sm text-secondary">
+                    <Link className="transition-colors hover:text-primary hover:underline" to="/cart">
+                        Giỏ hàng
+                    </Link>
+                    <span className="material-symbols-outlined text-base">chevron_right</span>
+                    <span className="font-label-md text-primary">Thanh toán</span>
+                    <span className="material-symbols-outlined text-base">chevron_right</span>
+                    <span>Hoàn tất</span>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
+                <section className="flex flex-col gap-md lg:col-span-8">
+                    <div className="border border-outline-variant bg-surface-container-lowest p-md">
+                        <div className="mb-sm flex items-center justify-between gap-sm">
+                            <h2 className="flex items-center gap-xs font-headline-sm text-headline-sm text-on-surface">
+                                <span className="material-symbols-outlined text-primary">location_on</span>
+                                Địa chỉ nhận hàng
+                            </h2>
+                            <Link className="text-label-sm text-primary hover:underline" to="/cart">
+                                Thay đổi
+                            </Link>
+                        </div>
+
+                        {selectedAddress ? (
+                            <div className="rounded-md bg-surface-container-low p-sm">
+                                <div className="flex flex-wrap items-center gap-xs">
+                                    <span className="font-label-md text-label-md text-on-surface">
+                                        {selectedAddress.full_name}
+                                    </span>
+                                    <span className="text-body-sm text-secondary">| {selectedAddress.phone}</span>
+                                    {selectedAddress.is_default && (
+                                        <span className="rounded-full bg-secondary-container px-xs py-0.5 text-[11px] font-bold uppercase text-primary">
+                                            Mặc định
+                                        </span>
+                                    )}
+                                </div>
+                                <p className="mt-xs text-body-md text-secondary">{formatAddress(selectedAddress)}</p>
+                            </div>
+                        ) : (
+                            <div className="rounded-md border border-error bg-error/10 p-sm text-body-sm text-error">
+                                Chưa chọn địa chỉ giao hàng. Vui lòng quay lại giỏ hàng để chọn địa chỉ.
+                            </div>
+                        )}
+                    </div>
+
+                    <div className="border border-outline-variant bg-surface-container-lowest p-md">
+                        <h2 className="mb-sm flex items-center gap-xs font-headline-sm text-headline-sm text-on-surface">
+                            <span className="material-symbols-outlined text-primary">payments</span>
+                            Phương thức thanh toán
+                        </h2>
+
+                        <div className="grid grid-cols-1 gap-sm sm:grid-cols-2">
+                            <label
+                                className={`cursor-pointer rounded-md border p-sm transition-colors ${
+                                    paymentMethod === "cod"
+                                        ? "border-primary bg-primary/5"
+                                        : "border-outline-variant bg-surface"
+                                }`}>
+                                <div className="flex items-start gap-sm">
+                                    <input
+                                        checked={paymentMethod === "cod"}
+                                        className="mt-1 accent-primary"
+                                        name="payment_method"
+                                        type="radio"
+                                        onChange={() => setPaymentMethod("cod")}
+                                    />
+                                    <div>
+                                        <p className="font-label-md text-label-md text-on-surface">
+                                            Thanh toán khi nhận hàng
+                                        </p>
+                                        <p className="mt-1 text-body-sm text-secondary">
+                                            Kiểm tra hàng trước khi thanh toán.
+                                        </p>
+                                    </div>
+                                </div>
+                            </label>
+
+                            <label
+                                className={`cursor-pointer rounded-md border p-sm transition-colors ${
+                                    paymentMethod === "bank"
+                                        ? "border-primary bg-primary/5"
+                                        : "border-outline-variant bg-surface"
+                                }`}>
+                                <div className="flex items-start gap-sm">
+                                    <input
+                                        checked={paymentMethod === "bank"}
+                                        className="mt-1 accent-primary"
+                                        name="payment_method"
+                                        type="radio"
+                                        onChange={() => setPaymentMethod("bank")}
+                                    />
+                                    <div>
+                                        <p className="font-label-md text-label-md text-on-surface">
+                                            Thanh toán qua VNPay
+                                        </p>
+                                        <p className="mt-1 text-body-sm text-secondary">
+                                            Thanh toán qua cổng thanh toán VNPay.
+                                        </p>
+                                    </div>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div className="border border-outline-variant bg-surface-container-lowest p-md">
+                        <h2 className="mb-sm flex items-center gap-xs font-headline-sm text-headline-sm text-on-surface">
+                            <span className="material-symbols-outlined text-primary">edit_note</span>
+                            Ghi chú đơn hàng
+                        </h2>
+                        <textarea
+                            className="min-h-28 w-full resize-none rounded-md border border-outline-variant bg-surface p-sm text-body-md outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/15"
+                            placeholder="Ví dụ: giao giờ hành chính, gọi trước khi giao..."
+                            value={note}
+                            onChange={(event) => setNote(event.target.value)}
+                        />
+                    </div>
+                </section>
+
+                <aside className="lg:col-span-4">
+                    <div className="sticky top-24 border border-outline-variant bg-surface-container-lowest p-md">
+                        <h2 className="mb-md font-headline-md text-headline-md text-on-surface">
+                            Đơn hàng của bạn
+                        </h2>
+
+                        <div className="mb-md flex flex-col gap-sm border-b border-outline-variant pb-md">
+                            {cartItems.map((item) => (
+                                <div key={item.id} className="flex gap-sm">
+                                    <div className="h-20 w-16 shrink-0 overflow-hidden bg-surface-container">
+                                        <img alt={item.name} className="h-full w-full object-cover" src={item.image} />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <p className="truncate font-label-md text-label-md text-on-surface">{item.name}</p>
+                                        <p className="mt-1 text-body-sm text-secondary">
+                                            {item.color && `Màu: ${item.color}`}
+                                            {item.color && item.size ? " | " : ""}
+                                            {item.size && `Size: ${item.size}`}
+                                        </p>
+                                        <div className="mt-xs flex items-center justify-between gap-xs">
+                                            <span className="text-body-sm text-secondary">x{item.quantity}</span>
+                                            <span className="font-label-md text-primary">
+                                                {formatCurrency(item.price * item.quantity)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <div className="flex flex-col gap-sm border-b border-outline-variant pb-md">
+                            <div className="flex justify-between text-body-md text-secondary">
+                                <span>Tạm tính ({itemCount} sản phẩm)</span>
+                                <span>{formatCurrency(subtotal)}</span>
+                            </div>
+                            <div className="flex justify-between text-body-md text-secondary">
+                                <span>Phí vận chuyển</span>
+                                <span>{formatCurrency(shippingFee)}</span>
+                            </div>
+                            <div className="flex justify-between text-label-sm text-error">
+                                <span>Giảm giá</span>
+                                <span>-{formatCurrency(discount)}</span>
+                            </div>
+                        </div>
+
+                        <div className="my-md flex items-center justify-between">
+                            <span className="font-headline-sm text-on-surface">Tổng thanh toán</span>
+                            <span className="font-headline-md text-primary">{formatCurrency(total)}</span>
+                        </div>
+
+                        <button
+                            className="flex w-full items-center justify-center gap-xs bg-primary py-md font-label-md text-on-primary shadow-sm transition-all active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60"
+                            disabled={!selectedAddress}
+                            type="button">
+                            <span>Đặt hàng</span>
+                            <span className="material-symbols-outlined">check_circle</span>
+                        </button>
+
+                        <p className="mt-sm text-center text-body-sm text-secondary">
+                            Chưa gọi API đặt hàng. Logic xử lý sẽ được nối ở bước tiếp theo.
+                        </p>
+                    </div>
+                </aside>
+            </div>
+        </main>
+    );
+};
+
+export default CheckoutPage;
