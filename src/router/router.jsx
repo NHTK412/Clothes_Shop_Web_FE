@@ -13,6 +13,7 @@ import CheckoutPage from "../pages/customer/CheckoutPage";
 import ReturnPage from "../pages/customer/ReturnPage";
 import OrdersPage from "../pages/customer/OrdersPage";
 import OrderDetailPage from "../pages/customer/OrderDetailPage";
+import ProfilePage from "../pages/customer/ProfilePage";
 
 const router = createBrowserRouter([
     {
@@ -45,9 +46,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "profile",
-                element: (
-                    <h1>Profile Page</h1>
-                )
+                element: <ProfilePage />
             },
             {
                 path: "orders",
