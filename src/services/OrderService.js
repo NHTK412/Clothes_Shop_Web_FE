@@ -18,6 +18,16 @@ const OrderService = {
         return response?.data ?? response;
     },
 
+    async getGhnTracking(orderCode) {
+        if (!orderCode) return [];
+
+        const response = await api.get("/ghn/detail", {
+            params: { order_code: orderCode },
+        });
+
+        return response?.data ?? response ?? [];
+    },
+
     async createOrder(payload) {
         const response = await api.post("/order", payload);
         return response?.data ?? response;

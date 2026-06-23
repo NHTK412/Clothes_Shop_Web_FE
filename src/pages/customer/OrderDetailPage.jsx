@@ -40,6 +40,25 @@ const paymentStatusMeta = {
     REFUNDED: "Đã hoàn tiền",
 };
 
+const ghnStatusMeta = {
+    ready_to_pick: "Chờ lấy hàng",
+    picking: "Đang lấy hàng",
+    money_collect_picking: "Đang thu tiền khi lấy hàng",
+    picked: "Đã lấy hàng",
+    storing: "Đang lưu kho",
+    transporting: "Đang vận chuyển",
+    sorting: "Đang phân loại",
+    delivering: "Đang giao hàng",
+    money_collect_delivering: "Đang thu tiền khi giao hàng",
+    delivered: "Đã giao hàng",
+    delivery_fail: "Giao hàng thất bại",
+    waiting_to_return: "Chờ hoàn hàng",
+    return: "Đang hoàn hàng",
+    returned: "Đã hoàn hàng",
+    cancel: "Đã hủy",
+    exception: "Có vấn đề phát sinh",
+};
+
 const formatDateTime = (dateString) => {
     if (!dateString) return "Đang cập nhật";
 
@@ -74,6 +93,9 @@ const OrderDetailPage = () => {
     const [error, setError] = useState("");
     const [isPaymentLoading, setIsPaymentLoading] = useState(false);
     const [paymentError, setPaymentError] = useState("");
+    const [trackingItems, setTrackingItems] = useState([]);
+    const [isTrackingLoading, setIsTrackingLoading] = useState(false);
+    const [trackingError, setTrackingError] = useState("");
 
     useEffect(() => {
         let isMounted = true;
@@ -103,6 +125,42 @@ const OrderDetailPage = () => {
             isMounted = false;
         };
     }, [id]);
+
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchTracking = async () => {
+            if (order?.status !== "SHIPPING" || !order?.ghn_order_code) {
+                setTrackingItems([]);
+                setTrackingError("");
+                setIsTrackingLoading(false);
+                return;
+            }
+
+            setIsTrackingLoading(true);
+            setTrackingError("");
+
+            try {
+                const response = await OrderService.getGhnTracking(order.ghn_order_code);
+                if (!isMounted) return;
+                setTrackingItems(Array.isArray(response) ? response : []);
+            } catch (err) {
+                if (!isMounted) return;
+                setTrackingItems([]);
+                setTrackingError(err?.response?.data?.message || "Không thể tải theo dõi vận chuyển. Vui lòng thử lại.");
+            } finally {
+                if (isMounted) {
+                    setIsTrackingLoading(false);
+                }
+            }
+        };
+
+        fetchTracking();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [order?.ghn_order_code, order?.status]);
 
     const details = order?.order_details ?? [];
     const meta = statusMeta[order?.status] || {
@@ -197,18 +255,18 @@ const OrderDetailPage = () => {
                     {
                         (order.status === "PENDING_PAYMENT" && order.payment?.status === "UNPAID") ? (
                             <>
-                            <button
-                                className="mt-sm inline-flex items-center justify-center gap-xs rounded-lg bg-primary px-md py-xs font-label-md text-label-md text-on-primary transition-colors hover:bg-primary-container active:opacity-70 disabled:cursor-not-allowed disabled:opacity-60"
-                                type="button"
-                                disabled={isPaymentLoading}
-                                onClick={handlePayNow}
-                            >
-                                {isPaymentLoading ? "Đang tạo thanh toán..." : "Thanh toán ngay"}
-                                <span className="material-symbols-outlined text-base">chevron_right</span>
-                            </button>
-                            {paymentError ? (
-                                <p className="mt-xs max-w-xs text-body-sm text-error">{paymentError}</p>
-                            ) : null}
+                                <button
+                                    className="mt-sm inline-flex items-center justify-center gap-xs rounded-lg bg-primary px-md py-xs font-label-md text-label-md text-on-primary transition-colors hover:bg-primary-container active:opacity-70 disabled:cursor-not-allowed disabled:opacity-60"
+                                    type="button"
+                                    disabled={isPaymentLoading}
+                                    onClick={handlePayNow}
+                                >
+                                    {isPaymentLoading ? "Đang tạo thanh toán..." : "Thanh toán ngay"}
+                                    <span className="material-symbols-outlined text-base">chevron_right</span>
+                                </button>
+                                {paymentError ? (
+                                    <p className="mt-xs max-w-xs text-body-sm text-error">{paymentError}</p>
+                                ) : null}
                             </>
                         ) : null
                     }
@@ -237,6 +295,57 @@ const OrderDetailPage = () => {
                             </p>
                         </div>
                     </div>
+
+                    {order.status === "SHIPPING" ? (
+                        <div className="border border-outline-variant bg-surface-container-lowest p-md">
+                            <div className="mb-sm flex items-center gap-xs">
+                                <span className="material-symbols-outlined text-primary">route</span>
+                                <h2 className="font-headline-sm text-headline-sm text-on-surface">Theo dõi giao hàng GHN</h2>
+                            </div>
+
+                            {isTrackingLoading ? (
+                                <div className="flex flex-col gap-xs">
+                                    <div className="h-4 w-48 animate-pulse rounded bg-surface-container-high" />
+                                    <div className="h-4 w-64 animate-pulse rounded bg-surface-container-high" />
+                                </div>
+                            ) : trackingError ? (
+                                <p className="text-body-sm text-error">{trackingError}</p>
+                            ) : trackingItems.length > 0 ? (
+                                <div className="flex flex-col gap-sm">
+                                    {trackingItems.map((item, index) => (
+                                        <div key={`${item.status}-${item.updated_date}-${index}`} className="flex gap-sm">
+                                            <div className="flex flex-col items-center">
+                                                <span className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-on-primary px-4 py-4">
+                                                    <span className="material-symbols-outlined text-base">
+                                                        {index === 0 ? "local_shipping" : "radio_button_checked"}
+                                                    </span>
+                                                </span>
+                                                {index < trackingItems.length - 1 ? (
+                                                    <span className="h-full w-px bg-outline-variant" />
+                                                ) : null}
+                                            </div>
+                                            <div className="min-w-0 pb-sm">
+                                                <p className="font-label-md text-label-md text-on-surface">
+                                                    {ghnStatusMeta[item.status] || item.status || "Đang cập nhật"}
+                                                </p>
+                                                <p className="mt-1 text-body-sm text-on-surface-variant">
+                                                    Cập nhật: {formatDateTime(item.updated_date)}
+                                                </p>
+                                                {/* <div className="mt-xs flex flex-wrap gap-xs text-body-sm text-on-surface-variant">
+                                                    <span>Thanh toán GHN: {item.payment_type_id || "Đang cập nhật"}</span>
+                                                    {item.trip_code ? <span>Chuyến: {item.trip_code}</span> : null}
+                                                </div> */}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <p className="text-body-sm text-on-surface-variant">
+                                    Chưa có dữ liệu theo dõi từ GHN.
+                                </p>
+                            )}
+                        </div>
+                    ) : null}
 
                     <div className="border border-outline-variant bg-surface-container-lowest p-md">
                         <div className="mb-md flex items-center justify-between gap-sm border-b border-outline-variant pb-sm">
