@@ -20,7 +20,7 @@ const CheckoutPage = () => {
     const [note, setNote] = useState("");
     const [placingOrder, setPlacingOrder] = useState(false);
     const [createdOrder, setCreatedOrder] = useState(null);
-    const [checkoutStep, setCheckoutStep] = useState("checkout");
+    // const [checkoutStep, setCheckoutStep] = useState("checkout");
 
     const cartItems = state?.cartItems || [];
     const selectedAddress = state?.selectedAddress || null;
@@ -69,7 +69,7 @@ const CheckoutPage = () => {
             }
 
             setCreatedOrder(order);
-            setCheckoutStep("complete");
+            // setCheckoutStep("complete");
             notification.success({
                 message: "Tạo đơn hàng thành công",
                 description: `Đơn hàng #${order?.id || ""} đã được tạo.`,
@@ -122,9 +122,12 @@ const CheckoutPage = () => {
                         Giỏ hàng
                     </Link>
                     <span className="material-symbols-outlined text-base">chevron_right</span>
-                    <span className={checkoutStep === "checkout" ? "font-label-md text-primary" : ""}>Thanh toán</span>
+                    {/* <span className={checkoutStep === "checkout" ? "font-label-md text-primary" : ""}>Thanh toán</span>
                     <span className="material-symbols-outlined text-base">chevron_right</span>
-                    <span className={checkoutStep === "complete" ? "font-label-md text-primary" : ""}>Hoàn tất</span>
+                    <span className={checkoutStep === "complete" ? "font-label-md text-primary" : ""}>Hoàn tất</span> */}
+                    <span className="font-label-md text-primary">Thanh toán</span>
+                    <span className="material-symbols-outlined text-base">chevron_right</span>
+                    <span className="">Hoàn tất</span>
                 </div>
             </div>
 
@@ -171,11 +174,10 @@ const CheckoutPage = () => {
 
                         <div className="grid grid-cols-1 gap-sm sm:grid-cols-2">
                             <label
-                                className={`cursor-pointer rounded-md border p-sm transition-colors ${
-                                    paymentMethod === "COD"
-                                        ? "border-primary bg-primary/5"
-                                        : "border-outline-variant bg-surface"
-                                }`}>
+                                className={`cursor-pointer rounded-md border p-sm transition-colors ${paymentMethod === "COD"
+                                    ? "border-primary bg-primary/5"
+                                    : "border-outline-variant bg-surface"
+                                    }`}>
                                 <div className="flex items-start gap-sm">
                                     <input
                                         checked={paymentMethod === "COD"}
@@ -196,11 +198,10 @@ const CheckoutPage = () => {
                             </label>
 
                             <label
-                                className={`cursor-pointer rounded-md border p-sm transition-colors ${
-                                    paymentMethod === "VNPAY"
-                                        ? "border-primary bg-primary/5"
-                                        : "border-outline-variant bg-surface"
-                                }`}>
+                                className={`cursor-pointer rounded-md border p-sm transition-colors ${paymentMethod === "VNPAY"
+                                    ? "border-primary bg-primary/5"
+                                    : "border-outline-variant bg-surface"
+                                    }`}>
                                 <div className="flex items-start gap-sm">
                                     <input
                                         checked={paymentMethod === "VNPAY"}
@@ -235,7 +236,7 @@ const CheckoutPage = () => {
                         />
                     </div>
 
-                    {createdOrder && (
+                    {/* {createdOrder && (
                         <div className="border border-primary bg-primary/5 p-md">
                             <h2 className="flex items-center gap-xs font-headline-sm text-headline-sm text-primary">
                                 <span className="material-symbols-outlined">check_circle</span>
@@ -256,7 +257,7 @@ const CheckoutPage = () => {
                                 </p>
                             </div>
                         </div>
-                    )}
+                    )} */}
                 </section>
 
                 <aside className="lg:col-span-4">
@@ -299,10 +300,10 @@ const CheckoutPage = () => {
                                 <span>{formatCurrency(shippingFee)}</span>
                             </div>
                             {discount > 0 && (
-                            <div className="flex justify-between text-label-sm text-error">
-                                <span>Giảm giá</span>
-                                <span>-{formatCurrency(discount)}</span>
-                            </div>
+                                <div className="flex justify-between text-label-sm text-error">
+                                    <span>Giảm giá</span>
+                                    <span>-{formatCurrency(discount)}</span>
+                                </div>
                             )}
                         </div>
 
