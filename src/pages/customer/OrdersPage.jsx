@@ -1,4 +1,5 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import OrderService from "../../services/OrderService";
 
 const PER_PAGE = 10;
@@ -266,12 +267,12 @@ const OrdersPage = () => {
                                         </div>
                                     </div>
 
-                                    <button
+                                    <Link
                                         className="inline-flex items-center justify-center gap-xs border border-primary px-md py-xs font-label-md text-label-md text-primary transition-colors hover:bg-secondary-container active:opacity-70"
-                                        type="button">
+                                        to={`/orders/${order.id}`}>
                                         Xem chi tiết
                                         <span className="material-symbols-outlined text-base">chevron_right</span>
-                                    </button>
+                                    </Link>
                                 </div>
                             </article>
                         );

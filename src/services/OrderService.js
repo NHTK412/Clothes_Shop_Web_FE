@@ -13,6 +13,11 @@ const OrderService = {
         return response?.data ?? response;
     },
 
+    async getOrderDetail(orderId) {
+        const response = await api.get(`/order/${orderId}`);
+        return response?.data ?? response;
+    },
+
     async createOrder(payload) {
         const response = await api.post("/order", payload);
         return response?.data ?? response;
