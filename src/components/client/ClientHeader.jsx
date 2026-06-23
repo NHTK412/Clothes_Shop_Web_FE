@@ -72,31 +72,48 @@ const ClientHeader = () => {
                                 <span className="hidden lg:inline font-label-md text-label-md">Giỏ hàng</span>
                             </Link>
                             <div className="group relative">
-                            <button
-                                className="flex items-center gap-xs p-xs text-primary transition-transform active:scale-95 duration-150"
-                                type="button">
-                                <span className="material-symbols-outlined">person</span>
-                                <span className="hidden lg:inline font-label-md text-label-md">Tài khoản</span>
-                            </button>
-                            <div
-                                className="absolute right-0 top-full z-50 w-72 origin-top-right rounded-lg border border-outline-variant bg-surface-container-lowest p-sm shadow-lg opacity-0 scale-95 -translate-y-1 pointer-events-none transition-all duration-200 group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-hover:pointer-events-auto">
-                                <div className="flex items-center gap-sm rounded-md bg-surface-container-low p-sm">
-                                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary">
-                                        <span className="material-symbols-outlined">person</span>
-                                    </div>
-                                    <div className="min-w-0">
-                                        <p className="font-label-md text-label-md text-on-surface">Thông tin cá nhân</p>
-                                        <p className="mt-1 truncate text-body-sm text-secondary">Người dùng Clothes Shop</p>
+                                <button
+                                    className="flex items-center gap-xs p-xs text-primary transition-transform active:scale-95 duration-150"
+                                    type="button">
+                                    <span className="material-symbols-outlined">person</span>
+                                    <span className="hidden lg:inline font-label-md text-label-md">Tài khoản</span>
+                                </button>
+                                <div
+                                    className="absolute right-0 top-full z-50 w-72 origin-top-right pt-2 opacity-0 scale-95 -translate-y-1 pointer-events-none transition-all duration-200 group-hover:translate-y-0 group-hover:scale-100 group-hover:opacity-100 group-hover:pointer-events-auto"
+                                >
+                                    <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest shadow-xl">
+                                        <div className="p-2">
+                                            <Link
+                                                to="/profile"
+                                                className="flex items-center gap-3 rounded-lg px-3 py-3 text-on-surface transition-colors hover:bg-surface-container"
+                                            >
+                                                <span className="material-symbols-outlined text-primary">
+                                                    manage_accounts
+                                                </span>
+                                                <span>Hồ sơ cá nhân</span>
+                                            </Link>
+                                            <Link
+                                                to="/orders"
+                                                className="flex items-center gap-3 rounded-lg px-3 py-3 text-on-surface transition-colors hover:bg-surface-container"
+                                            >
+                                                <span className="material-symbols-outlined text-primary">
+                                                    receipt_long
+                                                </span>
+                                                <span>Danh sách đơn hàng</span>
+                                            </Link>
+                                        </div>
+                                        <div className="border-t border-outline-variant p-2">
+                                            <button
+                                                type="button"
+                                                onClick={handleLogout}
+                                                className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-error transition-colors hover:bg-error/10"
+                                            >
+                                                <span className="material-symbols-outlined">logout</span>
+                                                <span>Đăng xuất</span>
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
-                                <button
-                                    className="mt-sm flex w-full items-center justify-between rounded-md border border-outline-variant px-sm py-sm text-error transition-colors duration-150 hover:bg-error/10"
-                                    type="button"
-                                    onClick={handleLogout}>
-                                    <span className="material-symbols-outlined">logout</span>
-                                    <span className="font-label-md text-label-md">Đăng xuất</span>
-                                </button>
-                            </div>
                             </div>
                         </>
                     ) : (
