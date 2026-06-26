@@ -141,7 +141,7 @@ const OrderDetailPage = () => {
         let isMounted = true;
 
         const fetchTracking = async () => {
-            if (order?.status !== "SHIPPING" || !order?.ghn_order_code) {
+            if (order?.status !== "SHIPPING" && order?.status !== "COMPLETED" && order?.status !== "RETURNED" || !order?.ghn_order_code) {
                 setTrackingItems([]);
                 setTrackingError("");
                 setIsTrackingLoading(false);
@@ -441,7 +441,7 @@ const OrderDetailPage = () => {
                         </div>
                     </div>
 
-                    {order.status === "SHIPPING" ? (
+                    {order.status === "SHIPPING" || order.status === "COMPLETED" || order.status === "RETURNED" ? (
                         <div className="border border-outline-variant bg-surface-container-lowest p-md">
                             <div className="mb-sm flex items-center gap-xs">
                                 <span className="material-symbols-outlined text-primary">route</span>
