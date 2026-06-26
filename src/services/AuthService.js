@@ -41,9 +41,20 @@ const resetPassword = async (resetData) => {
     }
 };
 
+const oauthLogin = async (oauthData) => {
+    try {
+        const response = await axios.post("/auth/oauth2", oauthData);
+        return response.data;
+    }
+    catch (error) {
+        throw error;
+    }
+};
+
 export {
     login,
     register,
     sendOtp,
-    resetPassword
-}
+    resetPassword,
+    oauthLogin
+};
