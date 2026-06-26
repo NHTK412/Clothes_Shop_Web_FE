@@ -3,7 +3,8 @@ import { useEffect, useMemo, useState } from "react";
 import CartService from "../../services/CartService";
 import AddressService from "../../services/AddressService";
 import AddressSelectionModal from "../../components/client/AddressSelectionModal";
-
+import { notification } from "antd";
+import VoucherService from "../../services/VoucherService";
 const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
 
 const getAttributeDisplay = (attributes = [], type) => (
@@ -50,6 +51,12 @@ const CartDetailPage = () => {
     const [shippingFee, setShippingFee] = useState(0);
     const [shippingFeeLoading, setShippingFeeLoading] = useState(false);
     const [shippingFeeError, setShippingFeeError] = useState("");
+
+    const [voucherCode, setVoucherCode] = useState("");
+    const [voucherApplied, setVoucherApplied] = useState("");
+    const [discount, setDiscount] = useState(0);
+    const [shippingDiscount, setShippingDiscount] = useState(0);
+
 
     useEffect(() => {
         let mounted = true;
@@ -102,8 +109,8 @@ const CartDetailPage = () => {
         () => cartItems.reduce((total, item) => total + item.price * item.quantity, 0),
         [cartItems]
     );
-    const discount = 0;
-    const total = Math.max(subtotal + shippingFee, 0);
+    // const discount = 0;
+    const total = Math.max(subtotal + shippingFee - discount - shippingDiscount, 0);
 
     useEffect(() => {
         let mounted = true;
@@ -175,11 +182,79 @@ const CartDetailPage = () => {
                 selectedAddress,
                 subtotal,
                 shippingFee,
+                voucherCode: voucherApplied,
                 discount,
+                shippingDiscount,
                 total,
             },
         });
     };
+
+    const handleAddVoucher = (async () => {
+        try {
+            const voucher = await VoucherService.getVoucherByCode(voucherCode);
+            // Handle the voucher logic here
+
+            if (voucher) {
+                setVoucherApplied(voucher.code);
+                switch (voucher.discount_type) {
+                    case "ORDER": {
+                        const discountValue = voucher?.max_discount_amount ?
+                            Math.min(Number(voucher?.discount_amount) / 100 * subtotal, Number(voucher?.max_discount_amount))
+                            :
+                            Number(voucher?.discount_amount) / 100 * subtotal;
+                        setShippingDiscount(0);
+                        setDiscount(discountValue);
+                        break;
+                    }
+                    case "SHIPPING": {
+                        // const shippingDiscountValue = Math.min(Number(voucher?.discount_amount) / 100 * shippingFee, Number(voucher?.max_discount_amount));
+                        const shippingDiscountValue = voucher?.max_discount_amount ?
+                            Math.min(Number(voucher?.discount_amount) / 100 * shippingFee, Number(voucher?.max_discount_amount))
+                            :
+                            Number(voucher?.discount_amount) / 100 * shippingFee;
+                        setDiscount(0);
+                        setShippingDiscount(shippingDiscountValue);
+                        break;
+                    }
+                    default:
+                        notification.error({
+                            message: "Lỗi",
+                            description: "Loại giảm giá không hợp lệ.",
+                        });
+                        break;
+                }
+            }
+            setVoucherCode("");
+
+            //             {
+            //   "status": 200,
+            //   "success": true,
+            //   "message": null,
+            //   "data": {
+            //     "id": 1,
+            //     "code": "GIAM50",
+            //     "description": "Nhân kịp khai trương giảm giá 50% cho giá trị đơn hàng",
+            //     "discount_amount": "50.00",
+            //     "max_discount_amount": "2000000.00",
+            //     "discount_type": "ORDER",
+            //     "is_active": 1,
+            //     "usage_limit": 100,
+            //     "expiry_date": "2026-06-30",
+            //     "created_at": null,
+            //     "updated_at": null
+            //   }
+            // }
+
+        } catch (error) {
+            console.error("Error applying voucher:", error);
+            notification.error({
+                message: "Lỗi",
+                description: "Không thể áp dụng mã giảm giá. Vui lòng thử lại sau.",
+            });
+        }
+    });
+
 
     return (
         <main className="max-w-max-width mx-auto px-margin-mobile md:px-lg py-xl">
@@ -188,7 +263,7 @@ const CartDetailPage = () => {
             </h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
-                <section className="lg:col-span-8 flex flex-col gap-md">
+                <section className="lg:col-span-7 flex flex-col gap-md">
                     {loading ? (
                         <div className="bg-surface-container-lowest border border-outline-variant p-lg text-center">
                             <span className="material-symbols-outlined text-5xl text-primary animate-pulse">shopping_cart</span>
@@ -293,7 +368,7 @@ const CartDetailPage = () => {
                     </div>
                 </section>
 
-                <aside className="lg:col-span-4">
+                <aside className="lg:col-span-5">
                     <div className="bg-surface-container-lowest border border-outline-variant p-md sticky top-24">
                         <h2 className="font-headline-md text-headline-md text-on-surface mb-md">
                             Tóm tắt đơn hàng
@@ -341,58 +416,66 @@ const CartDetailPage = () => {
                             {shippingFeeError && (
                                 <p className="text-body-sm text-error">{shippingFeeError}</p>
                             )}
-                            {discount > 0 && (
-                            <div className="flex justify-between text-error font-label-sm">
-                                <span>Mã giảm giá (LUXE10)</span>
-                                <span>-{formatCurrency(discount)}</span>
-                            </div>
+                            { voucherApplied && discount > 0 && (
+                                <div className="flex justify-between text-error font-label-sm">
+                                    <span>Mã giảm giá ({voucherApplied})</span>
+                                    <span>-{formatCurrency(discount)}</span>
+                                </div>
                             )}
-                        </div>
+                            {voucherApplied && shippingDiscount > 0 && (
+                                <div className="flex justify-between text-error font-label-sm">
+                                    <span>Giảm phí vận chuyển ({voucherApplied})</span>
+                                    <span>-{formatCurrency(shippingDiscount)}</span>
+                                </div>
+                            )}
 
-                        <div className="flex justify-between items-center mb-lg">
-                            <span className="font-headline-sm text-on-surface">Tổng cộng</span>
-                            <span className="font-headline-md text-primary">
-                                {formatCurrency(cartItems.length > 0 ? total : 0)}
-                            </span>
-                        </div>
-
-                        {discount > 0 && (
-                        <div className="mb-lg">
-                            <label className="block text-label-sm text-secondary mb-xs uppercase tracking-wider">
-                                Mã giảm giá
-                            </label>
-                            <div className="flex gap-xs">
-                                <input
-                                    className="flex-grow bg-surface border border-outline-variant p-sm text-body-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                                    placeholder="Nhập mã..."
-                                    type="text"
-                                />
-                                <button
-                                    className="bg-secondary-container text-primary font-label-md px-md py-sm hover:bg-secondary-fixed transition-colors"
-                                    type="button">
-                                    Áp dụng
-                                </button>
+                            <div className="flex justify-between items-center mb-lg">
+                                <span className="font-headline-sm text-on-surface">Tổng cộng</span>
+                                <span className="font-headline-md text-primary">
+                                    {formatCurrency(cartItems.length > 0 ? total : 0)}
+                                </span>
                             </div>
-                        </div>
-                        )}
 
-                        <button
-                            className="w-full bg-primary text-on-primary font-label-md py-md shadow-sm hover:bg-on-primary-fixed-variant transition-all active:scale-[0.98] flex items-center justify-center gap-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                            disabled={cartItems.length === 0 || shippingFeeLoading || !selectedAddress}
-                            type="button"
-                            onClick={handleCheckout}>
-                            <span>Tiến hành thanh toán</span>
-                            <span className="material-symbols-outlined">arrow_forward</span>
-                        </button>
-
-                        <div className="mt-md flex flex-col gap-sm">
-                            <div className="flex items-center gap-xs text-secondary text-body-sm">
-                                <span className="material-symbols-outlined text-sm">verified_user</span>
-                                Thanh toán an toàn 100%
+                            {/* {discount > 0 && ( */}
+                            <div className="mb-lg">
+                                <label className="block text-label-sm text-secondary mb-xs uppercase tracking-wider">
+                                    Mã giảm giá
+                                </label>
+                                <div className="flex gap-xs">
+                                    <input
+                                        className="flex-grow bg-surface border border-outline-variant p-sm text-body-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                        placeholder="Nhập mã..."
+                                        type="text"
+                                        value={voucherCode}
+                                        onChange={(e) => setVoucherCode(e.target.value)}
+                                    />
+                                    <button
+                                        className="bg-secondary-container text-primary font-label-md px-md py-sm hover:bg-secondary-fixed transition-colors"
+                                        type="button" onClick={handleAddVoucher}>
+                                        Áp dụng
+                                    </button>
+                                </div>
                             </div>
-                            <div className="flex items-center gap-xs text-secondary text-body-sm">
-                                <span className="material-symbols-outlined text-sm">local_shipping</span>
-                                Giao hàng miễn phí cho đơn từ 2tr
+                            {/* )} */}
+
+                            <button
+                                className="w-full bg-primary text-on-primary font-label-md py-md shadow-sm hover:bg-on-primary-fixed-variant transition-all active:scale-[0.98] flex items-center justify-center gap-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                disabled={cartItems.length === 0 || shippingFeeLoading || !selectedAddress}
+                                type="button"
+                                onClick={handleCheckout}>
+                                <span>Tiến hành thanh toán</span>
+                                <span className="material-symbols-outlined">arrow_forward</span>
+                            </button>
+
+                            <div className="mt-md flex flex-col gap-sm">
+                                <div className="flex items-center gap-xs text-secondary text-body-sm">
+                                    <span className="material-symbols-outlined text-sm">verified_user</span>
+                                    Thanh toán an toàn 100%
+                                </div>
+                                <div className="flex items-center gap-xs text-secondary text-body-sm">
+                                    <span className="material-symbols-outlined text-sm">local_shipping</span>
+                                    Giao hàng miễn phí cho đơn từ 2tr
+                                </div>
                             </div>
                         </div>
                     </div>

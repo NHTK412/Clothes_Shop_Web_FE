@@ -26,7 +26,9 @@ const CheckoutPage = () => {
     const selectedAddress = state?.selectedAddress || null;
     const subtotal = Number(state?.subtotal || 0);
     const shippingFee = Number(state?.shippingFee || 0);
-    const discount = 0;
+    const voucherCode = state?.voucherCode || "";
+    const discount = Number(state?.discount || 0);
+    const shippingDiscount = Number(state?.shippingDiscount || 0);
     const total = Number(state?.total || 0);
 
     const itemCount = cartItems.reduce((count, item) => count + Number(item.quantity || 0), 0);
@@ -45,7 +47,7 @@ const CheckoutPage = () => {
         try {
             const order = await OrderService.createOrder({
                 address_id: selectedAddress.id,
-                gift_code: null,
+                gift_code: voucherCode || null,
                 payment_method: paymentMethod,
             });
 
@@ -132,7 +134,7 @@ const CheckoutPage = () => {
             </div>
 
             <div className="grid grid-cols-1 gap-gutter lg:grid-cols-12">
-                <section className="flex flex-col gap-md lg:col-span-8">
+                <section className="flex flex-col gap-md lg:col-span-7">
                     <div className="border border-outline-variant bg-surface-container-lowest p-md">
                         <div className="mb-sm flex items-center justify-between gap-sm">
                             <h2 className="flex items-center gap-xs font-headline-sm text-headline-sm text-on-surface">
@@ -215,7 +217,7 @@ const CheckoutPage = () => {
                                             Thanh toán qua VNPay
                                         </p>
                                         <p className="mt-1 text-body-sm text-secondary">
-                                            Thanh toán qua cổng thanh toán VNPay.
+                                            Thanh toán qua cổng thanh toán.
                                         </p>
                                     </div>
                                 </div>
@@ -260,7 +262,7 @@ const CheckoutPage = () => {
                     )} */}
                 </section>
 
-                <aside className="lg:col-span-4">
+                <aside className="lg:col-span-5">
                     <div className="sticky top-24 border border-outline-variant bg-surface-container-lowest p-md">
                         <h2 className="mb-md font-headline-md text-headline-md text-on-surface">
                             Đơn hàng của bạn
@@ -300,9 +302,15 @@ const CheckoutPage = () => {
                                 <span>{formatCurrency(shippingFee)}</span>
                             </div>
                             {discount > 0 && (
-                                <div className="flex justify-between text-label-sm text-error">
-                                    <span>Giảm giá</span>
+                                <div className="flex justify-between text-error font-label-sm">
+                                    <span>Giảm giá{voucherCode ? ` (${voucherCode})` : ""}</span>
                                     <span>-{formatCurrency(discount)}</span>
+                                </div>
+                            )}
+                            {shippingDiscount > 0 && (
+                                <div className="flex justify-between text-error font-label-sm">
+                                    <span>Giảm phí vận chuyển ({voucherCode})</span>
+                                    <span>-{formatCurrency(shippingDiscount)}</span>
                                 </div>
                             )}
                         </div>
