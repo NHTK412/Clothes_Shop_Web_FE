@@ -18,6 +18,16 @@ const OrderService = {
         return response?.data ?? response;
     },
 
+    async cancelOrder(orderId) {
+        const response = await api.patch(`/order/${orderId}/cancel`);
+        return response?.data ?? response;
+    },
+
+    async reviewOrderDetail(orderId, orderDetailId, payload) {
+        const response = await api.post(`/order/${orderId}/${orderDetailId}/review`, payload);
+        return response?.data ?? response;
+    },
+
     async getGhnTracking(orderCode) {
         if (!orderCode) return [];
 

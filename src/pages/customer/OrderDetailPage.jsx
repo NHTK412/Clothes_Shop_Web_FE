@@ -1,6 +1,8 @@
 import { Link, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
+import { Input, Modal, Rate, Upload, notification } from "antd";
 import OrderService from "../../services/OrderService";
+import UploadService from "../../services/UploadService";
 
 const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000/api").replace(/\/api\/?$/, "");
 
@@ -59,6 +61,8 @@ const ghnStatusMeta = {
     exception: "Có vấn đề phát sinh",
 };
 
+const cancellableStatuses = ["PENDING_PAYMENT", "CONFIRMED"];
+
 const formatDateTime = (dateString) => {
     if (!dateString) return "Đang cập nhật";
 
@@ -93,6 +97,13 @@ const OrderDetailPage = () => {
     const [error, setError] = useState("");
     const [isPaymentLoading, setIsPaymentLoading] = useState(false);
     const [paymentError, setPaymentError] = useState("");
+    const [isCancelling, setIsCancelling] = useState(false);
+    const [cancelError, setCancelError] = useState("");
+    const [reviewItem, setReviewItem] = useState(null);
+    const [reviewRating, setReviewRating] = useState(5);
+    const [reviewComment, setReviewComment] = useState("");
+    const [reviewFiles, setReviewFiles] = useState([]);
+    const [isSubmittingReview, setIsSubmittingReview] = useState(false);
     const [trackingItems, setTrackingItems] = useState([]);
     const [isTrackingLoading, setIsTrackingLoading] = useState(false);
     const [trackingError, setTrackingError] = useState("");
@@ -162,7 +173,7 @@ const OrderDetailPage = () => {
         };
     }, [order?.ghn_order_code, order?.status]);
 
-    const details = order?.order_details ?? [];
+    const details = useMemo(() => order?.order_details ?? [], [order?.order_details]);
     const meta = statusMeta[order?.status] || {
         label: order?.status || "Đang cập nhật",
         className: "bg-surface-container-high text-on-surface-variant",
@@ -171,6 +182,8 @@ const OrderDetailPage = () => {
         () => details.reduce((total, item) => total + Number(item.quantity || 0), 0),
         [details]
     );
+    const canCancelOrder = cancellableStatuses.includes(order?.status);
+    const canReviewOrder = order?.status === "COMPLETED";
 
     const handlePayNow = async () => {
         if (!order?.id || isPaymentLoading) return;
@@ -195,6 +208,122 @@ const OrderDetailPage = () => {
             setPaymentError(err?.response?.data?.message || "Không thể tạo liên kết thanh toán. Vui lòng thử lại.");
         } finally {
             setIsPaymentLoading(false);
+        }
+    };
+
+    const cancelOrder = async () => {
+        if (!order?.id || isCancelling || !canCancelOrder) return;
+
+        setIsCancelling(true);
+        setCancelError("");
+
+        try {
+            const response = await OrderService.cancelOrder(order.id);
+            setOrder((currentOrder) => ({
+                ...currentOrder,
+                ...response,
+            }));
+        } catch (err) {
+            setCancelError(err?.response?.data?.message || "Không thể hủy đơn hàng. Vui lòng thử lại.");
+        } finally {
+            setIsCancelling(false);
+        }
+    };
+
+    const handleCancelOrder = () => {
+        if (!order?.id || isCancelling || !canCancelOrder) return;
+
+        Modal.confirm({
+            title: "Hủy đơn hàng?",
+            content: "Đơn hàng sau khi hủy sẽ không thể tiếp tục xử lý. Bạn có chắc muốn hủy đơn hàng này?",
+            okText: "Hủy đơn",
+            cancelText: "Không",
+            okButtonProps: { danger: true },
+            centered: true,
+            onOk: cancelOrder,
+        });
+    };
+
+    const openReviewModal = (item) => {
+        setReviewItem(item);
+        setReviewRating(5);
+        setReviewComment("");
+        setReviewFiles([]);
+    };
+
+    const closeReviewModal = () => {
+        setReviewItem(null);
+        setReviewRating(5);
+        setReviewComment("");
+        setReviewFiles([]);
+    };
+
+    const handleSubmitReview = async () => {
+        if (!order?.id || !reviewItem?.id || isSubmittingReview) return;
+
+        if (!reviewRating) {
+            notification.warning({
+                message: "Chưa chọn số sao",
+                description: "Vui lòng chọn từ 1 đến 5 sao để đánh giá sản phẩm.",
+            });
+            return;
+        }
+
+        setIsSubmittingReview(true);
+
+        try {
+            const imagePaths = [];
+            for (const fileItem of reviewFiles.slice(0, 5)) {
+                const file = fileItem.originFileObj || fileItem;
+                if (!file) continue;
+
+                const uploadResponse = await UploadService.uploadImage(file);
+                const imagePath = uploadResponse?.image_url || uploadResponse?.url || uploadResponse?.path || "";
+                if (imagePath) imagePaths.push(imagePath);
+            }
+
+            const payload = {
+                order: order.id,
+                orderDetail: reviewItem.id,
+                rating: reviewRating,
+                comment: reviewComment.trim() || null,
+                imagePaths,
+            };
+            const response = await OrderService.reviewOrderDetail(order.id, reviewItem.id, payload);
+            if (response?.order_details) {
+                setOrder((currentOrder) => ({
+                    ...currentOrder,
+                    ...response,
+                }));
+            } else {
+                const submittedReview = response?.review ?? response ?? payload;
+
+                setOrder((currentOrder) => ({
+                    ...currentOrder,
+                    order_details: (currentOrder?.order_details ?? []).map((item) => (
+                        item.id === reviewItem.id
+                            ? {
+                                ...item,
+                                review_id: submittedReview?.id ?? item.review_id ?? true,
+                                review: submittedReview,
+                            }
+                            : item
+                    )),
+                }));
+            }
+
+            notification.success({
+                message: "Đã gửi đánh giá",
+                description: "Cảm ơn bạn đã chia sẻ trải nghiệm sản phẩm.",
+            });
+            closeReviewModal();
+        } catch (err) {
+            notification.error({
+                message: "Không thể gửi đánh giá",
+                description: err?.response?.data?.message || "Vui lòng thử lại sau.",
+            });
+        } finally {
+            setIsSubmittingReview(false);
         }
     };
 
@@ -251,7 +380,7 @@ const OrderDetailPage = () => {
                     </p>
                 </div>
 
-                <div className="text-left sm:text-right">
+                <div className="flex flex-col items-start gap-xs sm:items-end">
                     {
                         (order.status === "PENDING_PAYMENT" && order.payment?.status === "UNPAID") ? (
                             <>
@@ -270,6 +399,22 @@ const OrderDetailPage = () => {
                             </>
                         ) : null
                     }
+                    {canCancelOrder ? (
+                        <>
+                            <button
+                                className="mt-sm inline-flex items-center justify-center gap-xs rounded-lg border border-error px-md py-xs font-label-md text-label-md text-error transition-colors hover:bg-error/10 active:opacity-70 disabled:cursor-not-allowed disabled:opacity-60"
+                                type="button"
+                                disabled={isCancelling}
+                                onClick={handleCancelOrder}
+                            >
+                                {isCancelling ? "Đang hủy đơn..." : "Hủy đơn hàng"}
+                                <span className="material-symbols-outlined text-base">cancel</span>
+                            </button>
+                            {cancelError ? (
+                                <p className="mt-xs max-w-xs text-body-sm text-error">{cancelError}</p>
+                            ) : null}
+                        </>
+                    ) : null}
                 </div>
             </div>
 
@@ -361,6 +506,7 @@ const OrderDetailPage = () => {
                                 const image = resolveImage(item.product_variant?.image);
                                 const finalUnitPrice = getItemFinalPrice(item);
                                 const discountAmount = Number(item.unit_discount_price || 0);
+                                const canReviewItem = canReviewOrder && !item.review;
 
                                 return (
                                     <div key={item.id} className="flex gap-sm py-md">
@@ -402,6 +548,16 @@ const OrderDetailPage = () => {
                                             <p className="mt-xs text-body-sm text-on-surface-variant">
                                                 x{item.quantity}
                                             </p>
+                                            {canReviewItem ? (
+                                                <button
+                                                    className="mt-sm inline-flex items-center justify-center gap-xs rounded-lg bg-primary px-sm py-xs font-label-md text-label-md text-on-primary transition-colors hover:bg-primary-container active:opacity-70"
+                                                    type="button"
+                                                    onClick={() => openReviewModal(item)}
+                                                >
+                                                    Đánh giá
+                                                    <span className="material-symbols-outlined text-base">star</span>
+                                                </button>
+                                            ) : null}
                                         </div>
                                     </div>
                                 );
@@ -468,6 +624,87 @@ const OrderDetailPage = () => {
                     </div>
                 </aside>
             </div>
+
+            <Modal
+                centered
+                confirmLoading={isSubmittingReview}
+                okText="Gửi đánh giá"
+                open={Boolean(reviewItem)}
+                title="Đánh giá sản phẩm"
+                onCancel={closeReviewModal}
+                onOk={handleSubmitReview}
+            >
+                <div className="flex flex-col gap-md">
+                    {reviewItem ? (
+                        <div className="flex gap-sm rounded-md bg-surface-container-low p-sm">
+                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-md bg-surface-container-high">
+                                {resolveImage(reviewItem.product_variant?.image) ? (
+                                    <img
+                                        alt={reviewItem.product_variant?.product?.name || "Sản phẩm"}
+                                        className="h-full w-full object-cover"
+                                        src={resolveImage(reviewItem.product_variant?.image)}
+                                    />
+                                ) : (
+                                    <span className="material-symbols-outlined flex h-full w-full items-center justify-center text-on-surface-variant">
+                                        image
+                                    </span>
+                                )}
+                            </div>
+                            <div className="min-w-0">
+                                <p className="font-label-md text-label-md text-on-surface">
+                                    {reviewItem.product_variant?.product?.name || `Sản phẩm #${reviewItem.product_variant_id}`}
+                                </p>
+                                <p className="mt-1 text-body-sm text-on-surface-variant">
+                                    Mã chi tiết đơn: #{reviewItem.id}
+                                </p>
+                            </div>
+                        </div>
+                    ) : null}
+
+                    <div>
+                        <label className="mb-xs block font-label-md text-label-md text-on-surface">
+                            Số sao
+                        </label>
+                        <Rate value={reviewRating} onChange={setReviewRating} />
+                    </div>
+
+                    <div>
+                        <label className="mb-xs block font-label-md text-label-md text-on-surface">
+                            Bình luận
+                        </label>
+                        <Input.TextArea
+                            maxLength={1000}
+                            rows={4}
+                            showCount
+                            placeholder="Chia sẻ cảm nhận của bạn về sản phẩm..."
+                            value={reviewComment}
+                            onChange={(event) => setReviewComment(event.target.value)}
+                        />
+                    </div>
+
+                    <div>
+                        <label className="mb-xs block font-label-md text-label-md text-on-surface">
+                            Hình ảnh
+                        </label>
+                        <Upload
+                            accept="image/*"
+                            beforeUpload={() => false}
+                            fileList={reviewFiles}
+                            listType="picture-card"
+                            maxCount={5}
+                            multiple
+                            onChange={({ fileList }) => setReviewFiles(fileList.slice(0, 5))}
+                        >
+                            {reviewFiles.length >= 5 ? null : (
+                                <div className="flex flex-col items-center gap-1 text-on-surface-variant">
+                                    <span className="material-symbols-outlined">add_photo_alternate</span>
+                                    <span className="text-body-sm">Tải ảnh</span>
+                                </div>
+                            )}
+                        </Upload>
+                    </div>
+                </div>
+            </Modal>
         </main>
     );
 };
