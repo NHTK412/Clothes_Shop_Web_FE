@@ -14,6 +14,7 @@ import ReturnPage from "../pages/customer/ReturnPage";
 import OrdersPage from "../pages/customer/OrdersPage";
 import OrderDetailPage from "../pages/customer/OrderDetailPage";
 import ProfilePage from "../pages/customer/ProfilePage";
+import FavoriteProductsPage from "../pages/customer/FavoriteProductsPage";
 
 const router = createBrowserRouter([
     {
@@ -31,6 +32,10 @@ const router = createBrowserRouter([
             {
                 path: "products/:id",
                 element: <ProductDetailPage />
+            },
+            {
+                path: "favorites",
+                element: <FavoriteProductsPage />
             },
             {
                 path: "cart",

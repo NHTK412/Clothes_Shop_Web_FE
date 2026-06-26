@@ -54,6 +54,32 @@ const getPricing = (item = {}) => {
   };
 };
 
+const getFavoriteState = (item = {}) => Boolean(
+  item.is_favorite ??
+    item.isFavorite ??
+    item.favorited ??
+    item.is_liked ??
+    item.favorite_id ??
+    item.favorite
+);
+
+const getProductId = (item = {}) => item.product_id ?? item.productId ?? item.id ?? item.product?.id ?? null;
+
+const normalizeFavoriteItems = (payload) => {
+  const list = Array.isArray(payload)
+    ? payload
+    : payload?.data ?? payload?.items ?? payload?.favorites ?? payload?.results ?? [];
+
+  return Array.isArray(list) ? list : [];
+};
+
+const getFavoriteProductIds = (payload) => new Set(
+  normalizeFavoriteItems(payload)
+    .map(getProductId)
+    .filter((id) => id !== null && id !== undefined)
+    .map((id) => String(id))
+);
+
 const ProductsService = {
   async getCategories() {
     try {
@@ -108,7 +134,17 @@ const ProductsService = {
           // relative path from API - resolve against backend origin
           image = `${BACKEND_ORIGIN}/${String(image).replace(/^\/+/, "")}`;
         }
-        return { id, name, image, category, ...pricing, shortDescription, description, created_at: p.created_at ?? p.createdAt ?? null };
+        return {
+          id,
+          name,
+          image,
+          category,
+          ...pricing,
+          shortDescription,
+          description,
+          isFavorite: getFavoriteState(p),
+          created_at: p.created_at ?? p.createdAt ?? null,
+        };
       });
 
       // Do NOT return fallbackProducts when the backend explicitly returns no items.
@@ -164,6 +200,7 @@ const ProductsService = {
           ...pricing,
           shortDescription,
           description,
+          isFavorite: getFavoriteState(p),
         };
       });
 
@@ -230,12 +267,32 @@ const ProductsService = {
         description,
         variants,
         categories,
+        isFavorite: getFavoriteState(p),
         created_at: p.created_at ?? p.createdAt ?? null,
       };
     } catch (e) {
       return null;
     }
   },
+
+  async addFavorite(productId) {
+    const response = await api.post(`/products/${productId}/favorites`);
+    return response?.data ?? response;
+  },
+
+  async removeFavorite(productId) {
+    const response = await api.delete(`/products/${productId}/favorites`);
+    return response?.data ?? response;
+  },
+
+  async getUserFavorites(userId) {
+    if (!userId) return [];
+
+    const response = await api.get(`/users/${userId}/favorites`);
+    return normalizeFavoriteItems(response?.data ?? response);
+  },
+
+  getFavoriteProductIds,
 };
 
 export default ProductsService;

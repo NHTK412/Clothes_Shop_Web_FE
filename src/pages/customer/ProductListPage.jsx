@@ -2,10 +2,14 @@
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState, useRef } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { notification } from "antd";
+import Cookies from "js-cookie";
 import productsService from "../../services/ProductsService";
+import ProfileService from "../../services/ProfileService";
 
 export default function ProductListPage() {
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [sizeOptions, setSizeOptions] = useState([]);
   const [colorOptions, setColorOptions] = useState([]);
@@ -26,6 +30,8 @@ export default function ProductListPage() {
   const [inStock, setInStock] = useState(false);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(12);
+  const [favoriteUpdatingId, setFavoriteUpdatingId] = useState(null);
+  const [favoriteProductIds, setFavoriteProductIds] = useState(() => new Set());
 
   useEffect(() => {
     let mounted = true;
@@ -123,7 +129,10 @@ export default function ProductListPage() {
       };
 
       items = sortItems(items, sortKey);
-      setProducts(items);
+      setProducts(items.map((item) => ({
+        ...item,
+        isFavorite: item.isFavorite || favoriteProductIds.has(String(item.id)),
+      })));
       setPagination(res.pagination || null);
     } catch (e) {
       setError(e.message || "Lỗi khi tải sản phẩm");
@@ -136,6 +145,95 @@ export default function ProductListPage() {
     loadProducts();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, perPage]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadFavorites = async () => {
+      if (!Cookies.get("access_token")) {
+        setFavoriteProductIds(new Set());
+        return;
+      }
+
+      try {
+        const profile = await ProfileService.getProfile();
+        const favorites = await productsService.getUserFavorites(profile?.id);
+        if (!mounted) return;
+
+        const favoriteIds = productsService.getFavoriteProductIds(favorites);
+        setFavoriteProductIds(favoriteIds);
+        setProducts((currentProducts) => currentProducts.map((item) => ({
+          ...item,
+          isFavorite: favoriteIds.has(String(item.id)),
+        })));
+      } catch (e) {
+        if (mounted) setFavoriteProductIds(new Set());
+      }
+    };
+
+    loadFavorites();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleToggleFavorite = async (event, product) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const token = Cookies.get("access_token");
+    if (!token) {
+      notification.warning({
+        message: "Vui lòng đăng nhập",
+        description: "Bạn cần đăng nhập trước khi thêm sản phẩm vào yêu thích.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!product?.id || favoriteUpdatingId === product.id) return;
+
+    const nextFavorite = !product.isFavorite;
+    setFavoriteProductIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      if (nextFavorite) nextIds.add(String(product.id));
+      else nextIds.delete(String(product.id));
+      return nextIds;
+    });
+    setProducts((currentProducts) => currentProducts.map((item) => (
+      item.id === product.id ? { ...item, isFavorite: nextFavorite } : item
+    )));
+    setFavoriteUpdatingId(product.id);
+
+    try {
+      if (nextFavorite) {
+        await productsService.addFavorite(product.id);
+      } else {
+        await productsService.removeFavorite(product.id);
+      }
+
+      notification.success({
+        message: nextFavorite ? "Đã thêm vào yêu thích" : "Đã bỏ yêu thích",
+      });
+    } catch (e) {
+      setFavoriteProductIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        if (nextFavorite) nextIds.delete(String(product.id));
+        else nextIds.add(String(product.id));
+        return nextIds;
+      });
+      setProducts((currentProducts) => currentProducts.map((item) => (
+        item.id === product.id ? { ...item, isFavorite: !nextFavorite } : item
+      )));
+      notification.error({
+        message: "Không thể cập nhật yêu thích",
+        description: e?.response?.data?.message || "Vui lòng thử lại sau.",
+      });
+    } finally {
+      setFavoriteUpdatingId(null);
+    }
+  };
 
   // when `category` state changes (including initialized from URL), reload products immediately
   useEffect(() => {
@@ -320,6 +418,24 @@ export default function ProductListPage() {
                       <Link key={p.id} to={`/products/${p.id}`} className="group bg-surface-container-lowest border border-outline-variant hover:border-primary transition-all duration-300 rounded-lg overflow-hidden">
                         <div className="relative overflow-hidden aspect-[3/4]">
                           <img alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={p.image} />
+                          <button
+                            aria-label={p.isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                            className={`absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border bg-white/95 shadow-sm backdrop-blur transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                              p.isFavorite
+                                ? "border-red-500 text-red-600"
+                                : "border-white text-gray-700 hover:border-red-400 hover:text-red-500"
+                            }`}
+                            type="button"
+                            disabled={favoriteUpdatingId === p.id}
+                            onClick={(event) => handleToggleFavorite(event, p)}
+                          >
+                            <span
+                              className="material-symbols-outlined text-xl"
+                              style={{ fontVariationSettings: p.isFavorite ? "'FILL' 1" : "'FILL' 0" }}
+                            >
+                              favorite
+                            </span>
+                          </button>
                         </div>
                         <div className="p-sm text-center">
                           <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">{p.category}</p>

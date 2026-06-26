@@ -6,6 +6,7 @@ import { notification } from "antd";
 import Cookies from "js-cookie";
 import productsService from "../../services/ProductsService";
 import CartService from "../../services/CartService";
+import ProfileService from "../../services/ProfileService";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ export default function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const normalizeSize = (str) => {
     if (!str) return null;
     const s = String(str).toLowerCase().trim();
@@ -37,7 +39,22 @@ export default function ProductDetailPage() {
       try {
         const p = await productsService.getProduct(id);
         if (!mounted) return;
-        setProduct(p);
+        let nextProduct = p;
+        if (Cookies.get("access_token") && p?.id) {
+          try {
+            const profile = await ProfileService.getProfile();
+            const favorites = await productsService.getUserFavorites(profile?.id);
+            const favoriteIds = productsService.getFavoriteProductIds(favorites);
+            nextProduct = {
+              ...p,
+              isFavorite: favoriteIds.has(String(p.id)),
+            };
+          } catch (favoriteError) {
+            nextProduct = p;
+          }
+        }
+        if (!mounted) return;
+        setProduct(nextProduct);
         // preselect first variant if available
         if (p?.variants && p.variants.length > 0) setSelectedVariant(p.variants[0]);
         if (p?.variants && p.variants.length > 0) {
@@ -130,6 +147,47 @@ export default function ProductDetailPage() {
       });
     } finally {
       setAddingToCart(false);
+    }
+  };
+
+  const handleToggleFavorite = async () => {
+    const token = Cookies.get("access_token");
+    if (!token) {
+      notification.warning({
+        message: "Vui lòng đăng nhập",
+        description: "Bạn cần đăng nhập trước khi thêm sản phẩm vào yêu thích.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!product?.id || favoriteLoading) return;
+
+    const nextFavorite = !product.isFavorite;
+    setProduct((prev) => prev ? { ...prev, isFavorite: nextFavorite } : prev);
+    setFavoriteLoading(true);
+
+    try {
+      if (nextFavorite) {
+        await productsService.addFavorite(product.id);
+      } else {
+        await productsService.removeFavorite(product.id);
+      }
+
+      notification.success({
+        message: nextFavorite ? "Đã thêm vào yêu thích" : "Đã bỏ yêu thích",
+        description: nextFavorite
+          ? "Sản phẩm đã được lưu vào danh sách yêu thích của bạn."
+          : "Sản phẩm đã được xóa khỏi danh sách yêu thích.",
+      });
+    } catch (e) {
+      setProduct((prev) => prev ? { ...prev, isFavorite: !nextFavorite } : prev);
+      notification.error({
+        message: "Không thể cập nhật yêu thích",
+        description: e?.response?.data?.message || "Vui lòng thử lại sau.",
+      });
+    } finally {
+      setFavoriteLoading(false);
     }
   };
 
@@ -328,10 +386,23 @@ export default function ProductDetailPage() {
               {addingToCart ? "Đang thêm..." : "Thêm vào giỏ hàng"}
             </button>
 
-            <button className="border p-3 rounded-md">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 21.364l-7.682-8.682a4.5 4.5 0 010-6.364z" />
-              </svg>
+            <button
+              aria-label={product.isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+              className={`border p-3 rounded-md transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                product.isFavorite
+                  ? "border-red-500 bg-red-50 text-red-600"
+                  : "border-gray-300 bg-white text-gray-700 hover:border-red-400 hover:text-red-500"
+              }`}
+              type="button"
+              disabled={favoriteLoading}
+              onClick={handleToggleFavorite}
+            >
+              <span
+                className="material-symbols-outlined text-xl"
+                style={{ fontVariationSettings: product.isFavorite ? "'FILL' 1" : "'FILL' 0" }}
+              >
+                favorite
+              </span>
             </button>
           </div>
         </div>
