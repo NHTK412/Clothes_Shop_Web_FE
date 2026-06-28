@@ -78,17 +78,17 @@ const getOrderStatusClasses = (status) => {
 const mapStatusFilter = (filter) => {
   switch (filter) {
     case 'pending_payment':
-      return 'pending_payment';
+      return 'PENDING_PAYMENT';
     case 'confirmed':
-      return 'confirmed';
+      return 'CONFIRMED';
     case 'shipping':
-      return 'shipping';
+      return 'SHIPPING';
     case 'completed':
-      return 'completed';
+      return 'COMPLETED';
     case 'cancelled':
-      return 'cancelled';
+      return 'CANCELLED';
     case 'returned':
-      return 'returned';
+      return 'RETURNED';
     default:
       return undefined;
   }
@@ -100,12 +100,12 @@ const AdminOrderListPage = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [page, setPage] = useState(1);
-  const [perPage, setPerPage] = useState(10);
+  const [perPage, setPerPage] = useState(15);
   const [statusFilter, setStatusFilter] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'created_at', direction: 'desc' });
 
-  const fetchOrders = async (targetPage = 1, targetPerPage = 10, targetStatus = 'all', targetSearch = '') => {
+  const fetchOrders = async (targetPage = 1, targetPerPage = 15, targetStatus = 'all', targetSearch = '') => {
     setLoading(true);
     setError(null);
     try {

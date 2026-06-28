@@ -23,6 +23,7 @@ import AdminOrderListPage from "../pages/admin/AdminOrderListPage";
 import AdminOrderDetailPage from "../pages/admin/AdminOrderDetailPage";
 import AdminSettingsPage from "../pages/admin/AdminSettingsPage";
 import AdminPromotionListPage from "../pages/admin/AdminPromotionListPage";
+import AdminVoucherListPage from "../pages/admin/AdminVoucherListPage";
 import CheckoutPage from "../pages/customer/CheckoutPage";
 import ReturnPage from "../pages/customer/ReturnPage";
 import OrdersPage from "../pages/customer/OrdersPage";
@@ -58,6 +59,10 @@ const router = createBrowserRouter([
             {
                 path: "promotions",
                 element: <AdminPromotionListPage />
+            },
+            {
+                path: "vouchers",
+                element: <AdminVoucherListPage />
             },
             {
                 path: "customers",
