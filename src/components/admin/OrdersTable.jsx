@@ -17,13 +17,16 @@ const getStatusBadgeClass = (status) => {
   if (normalized === 'PENDING_PAYMENT' || normalized === 'PENDING' || normalized === 'CHỜ THANH TOÁN') {
     return 'bg-amber-100 text-amber-800';
   }
-  if (normalized === 'PROCESSING' || normalized === 'CONFIRMED' || normalized === 'ĐANG XỬ LÝ' || normalized === 'ĐANG GIAO') {
+  if (normalized === 'PROCESSING' || normalized === 'CONFIRMED' || normalized === 'ĐANG XỬ LÝ' || normalized === 'ĐÃ XÁC NHẬN') {
     return 'bg-blue-100 text-blue-800';
+  }
+  if (normalized === 'SHIPPING' || normalized === 'ĐANG GIAO') {
+    return 'bg-cyan-100 text-cyan-800';
   }
   if (normalized === 'CANCELLED' || normalized === 'ĐÃ HỦY') {
     return 'bg-red-100 text-red-800';
   }
-  if (normalized === 'RETURNED' || normalized === 'TRẢ HÀNG' || normalized === 'ĐÃ HỦY') {
+  if (normalized === 'RETURNED' || normalized === 'TRẢ HÀNG') {
     return 'bg-purple-100 text-purple-800';
   }
   if (normalized === 'PAID' || normalized === 'ĐÃ THANH TOÁN') {
@@ -48,6 +51,7 @@ const getStatusLabel = (status) => {
   if (normalized === 'COMPLETED') return 'Hoàn thành';
   if (normalized === 'CANCELLED') return 'Đã hủy';
   if (normalized === 'SHIPPING') return 'Đang giao';
+  if (normalized === 'RETURNED') return 'Trả hàng';
   return status || 'Không rõ';
 };
 

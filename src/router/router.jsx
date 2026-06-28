@@ -22,6 +22,7 @@ import AdminCustomerDetailPage from "../pages/admin/AdminCustomerDetailPage";
 import AdminOrderListPage from "../pages/admin/AdminOrderListPage";
 import AdminOrderDetailPage from "../pages/admin/AdminOrderDetailPage";
 import AdminSettingsPage from "../pages/admin/AdminSettingsPage";
+import AdminPromotionListPage from "../pages/admin/AdminPromotionListPage";
 import CheckoutPage from "../pages/customer/CheckoutPage";
 import ReturnPage from "../pages/customer/ReturnPage";
 import OrdersPage from "../pages/customer/OrdersPage";
@@ -53,6 +54,10 @@ const router = createBrowserRouter([
             {
                 path: "products/:id/edit",
                 element: <AdminProductEditPage />
+            },
+            {
+                path: "promotions",
+                element: <AdminPromotionListPage />
             },
             {
                 path: "customers",

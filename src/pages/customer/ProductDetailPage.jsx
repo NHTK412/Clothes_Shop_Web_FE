@@ -1,4 +1,3 @@
-/* eslint-disable no-useless-assignment */
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
@@ -8,6 +7,90 @@ import productsService from "../../services/ProductsService";
 import CartService from "../../services/CartService";
 import ProfileService from "../../services/ProfileService";
 
+const getVariantAttributeValues = (variant) => {
+  const values = variant?.attribute_values ?? variant?.attributeValues ?? variant?.attributes ?? [];
+  return Array.isArray(values) ? values : [];
+};
+
+const getAttributeTypeKey = (attribute) => String(
+  attribute?.attribute_type_id ??
+  attribute?.attributeTypeId ??
+  attribute?.attribute_type?.id ??
+  attribute?.attributeType?.id ??
+  attribute?.type_id ??
+  attribute?.typeId ??
+  attribute?.attribute_type?.name ??
+  attribute?.attributeType?.name ??
+  'attribute'
+);
+
+const getAttributeValueKey = (attribute) => String(
+  attribute?.id ??
+  attribute?.attribute_value_id ??
+  attribute?.value_id ??
+  attribute?.value ??
+  attribute?.display_value ??
+  ''
+);
+
+const getAttributeDisplay = (attribute) =>
+  attribute?.display_value ??
+  attribute?.displayValue ??
+  attribute?.display_name ??
+  attribute?.label ??
+  attribute?.name ??
+  attribute?.value ??
+  '';
+
+const getAttributeMeta = (attribute) => {
+  try {
+    return typeof attribute?.meta_data === 'string'
+      ? JSON.parse(attribute.meta_data || '{}')
+      : (attribute?.meta_data ?? attribute?.metadata ?? {});
+  } catch {
+    return {};
+  }
+};
+
+const getAttributeKind = (attribute) => {
+  const raw = String(getAttributeDisplay(attribute)).toLowerCase().trim();
+  const meta = getAttributeMeta(attribute);
+  const explicitName = String(
+    attribute?.attribute_type?.name ??
+    attribute?.attributeType?.name ??
+    attribute?.type_name ??
+    ''
+  ).toLowerCase();
+
+  if (meta.hex || meta.color || /màu|color|colour/.test(explicitName)) return 'color';
+  if (/kích|size/.test(explicitName) || /^(xs|s|m|l|xl|xxl|xxxl|small|medium|large)$/i.test(raw)) return 'size';
+  if (/chất liệu|material|fabric/.test(explicitName) || /(cotton|polyester|linen|silk|wool|denim|nylon|spandex)/i.test(raw)) return 'material';
+  return 'default';
+};
+
+const getAttributeTypeLabel = (attribute, typeKey) => {
+  const explicitName =
+    attribute?.attribute_type?.display_name ??
+    attribute?.attribute_type?.name ??
+    attribute?.attributeType?.display_name ??
+    attribute?.attributeType?.name ??
+    attribute?.type_name;
+
+  if (explicitName) return explicitName;
+
+  const kind = getAttributeKind(attribute);
+  if (kind === 'color') return 'Màu sắc';
+  if (kind === 'size') return 'Kích cỡ';
+  if (kind === 'material') return 'Chất liệu';
+  return `Thuộc tính ${typeKey}`;
+};
+
+const getVariantAttributeSelection = (variant) =>
+  getVariantAttributeValues(variant).reduce((selection, attribute) => {
+    selection[getAttributeTypeKey(attribute)] = getAttributeValueKey(attribute);
+    return selection;
+  }, {});
+
 export default function ProductDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -15,69 +98,10 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [selectedVariant, setSelectedVariant] = useState(null);
-  const [selectedSize, setSelectedSize] = useState("");
-  const [selectedColor, setSelectedColor] = useState("");
+  const [selectedAttributes, setSelectedAttributes] = useState({});
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
   const [favoriteLoading, setFavoriteLoading] = useState(false);
-  const normalizeSize = (str) => {
-    if (!str) return null;
-    const s = String(str).toLowerCase().trim();
-    if (/^(s|small)$/.test(s)) return "S";
-    if (/^(m|medium)$/.test(s)) return "M";
-    if (/^(l|large)$/.test(s)) return "L";
-    if (/^(xl|x-large|xlarge|extra large|extra-large|x l)$/.test(s)) return "XL";
-    return null;
-  };
-
-  const getVariantSize = (variant) => {
-    const avs = variant.attribute_values || [];
-    const sizeAv = avs.find((av) => {
-      const raw = String(av.display_value ?? av.value ?? "").toLowerCase().trim();
-      if (Number(av.attribute_type_id) === 2) return true;
-      return /^(s|m|l|xl|xxl|small|medium|large)$/.test(raw);
-    });
-    if (!sizeAv) return null;
-    return normalizeSize(String(sizeAv.display_value ?? sizeAv.value ?? "").toLowerCase());
-  };
-
-  const getVariantColor = (variant) => {
-    const avs = variant.attribute_values || [];
-    const colorAv = avs.find((av) => {
-      const raw = String(av.display_value ?? av.value ?? "").toLowerCase().trim();
-      if (Number(av.attribute_type_id) === 1) return true;
-      return /^(white|black|blue|red|brown|grey|gray|green|yellow|pink|purple)$/.test(raw) || raw.includes('color');
-    });
-    if (!colorAv) return null;
-    return String(colorAv.value ?? colorAv.display_value ?? colorAv.id ?? "").trim();
-  };
-
-  const isColorAvailable = (colorValue) => {
-    return variants.some((v) => {
-      if (Number(v.stock || 0) <= 0) return false;
-      if (selectedSize) {
-        return (
-          String(getVariantColor(v)) === String(colorValue) &&
-          String(getVariantSize(v)) === String(selectedSize)
-        );
-      }
-      return String(getVariantColor(v)) === String(colorValue);
-    });
-  };
-
-  const isSizeAvailable = (sizeValue) => {
-    return variants.some((v) => {
-      if (Number(v.stock || 0) <= 0) return false;
-      if (selectedColor) {
-        return (
-          String(getVariantSize(v)) === String(sizeValue) &&
-          String(getVariantColor(v)) === String(selectedColor)
-        );
-      }
-      return String(getVariantSize(v)) === String(sizeValue);
-    });
-  };
-
   const [activeTab, setActiveTab] = useState(0);
   const [similarProducts, setSimilarProducts] = useState([]);
   const productSectionRef = useRef(null);
@@ -92,6 +116,8 @@ export default function ProductDetailPage() {
     let mounted = true;
     async function load() {
       setLoading(true);
+      setSelectedVariant(null);
+      setSelectedAttributes({});
       try {
         const p = await productsService.getProduct(id);
         if (!mounted) return;
@@ -115,14 +141,7 @@ export default function ProductDetailPage() {
         if (Array.isArray(p.variants) && p.variants.length > 0) {
           const firstAvailable = p.variants.find((v) => Number(v.stock || 0) > 0) || p.variants[0];
           setSelectedVariant(firstAvailable);
-          const avs = firstAvailable.attribute_values || [];
-          const sizeAv = avs.find((av) => Number(av.attribute_type_id) === 2 || /^(s|m|l|xl|small|medium|large)$/i.test(String((av.display_value||av.value||'')).toLowerCase()));
-          const colorAv = avs.find((av) => Number(av.attribute_type_id) === 1 || /^(white|black|blue|red|brown|grey|gray|green|yellow|pink|purple)$/i.test(String((av.display_value||av.value||'')).toLowerCase()));
-          if (sizeAv) {
-            const ns = normalizeSize(((sizeAv.display_value ?? sizeAv.value) || '').toString().toLowerCase());
-            if (ns) setSelectedSize(ns);
-          }
-          if (colorAv) setSelectedColor(colorAv.value ?? colorAv.display_value);
+          setSelectedAttributes(getVariantAttributeSelection(firstAvailable));
         }
       } catch (e) {
         setError(e?.message || "Lỗi khi tải sản phẩm");
@@ -203,7 +222,7 @@ export default function ProductDetailPage() {
     if (!selectedVariant?.id) {
       notification.warning({
         message: "Chọn phân loại",
-        description: "Vui lòng chọn màu sắc và kích cỡ trước khi thêm vào giỏ hàng.",
+        description: "Vui lòng chọn đầy đủ thuộc tính sản phẩm trước khi thêm vào giỏ hàng.",
       });
       return;
     }
@@ -267,53 +286,74 @@ export default function ProductDetailPage() {
     }
   };
 
-  // derive available sizes and colors from variants' attribute_values
-  const sizeSet = new Map();
-  const colorSet = new Map();
-  variants.forEach((v) => {
-    const size = getVariantSize(v);
-    const color = getVariantColor(v);
-    if (size && !sizeSet.has(size)) {
-      sizeSet.set(size, { value: size, display: size });
-    }
-    if (color && !colorSet.has(color)) {
-      const avs = v.attribute_values || [];
-      const colorAv = avs.find((av) => String(av.value ?? av.display_value ?? av.id) === String(color));
-      const display = colorAv?.display_value ?? colorAv?.value ?? color;
-      const lower = String(display).toLowerCase().trim();
-      let hex = null;
-      try {
-        const md = colorAv?.meta_data;
-        const parsed = typeof md === "string" ? JSON.parse(md || "{}") : (md || {});
-        hex = parsed.hex || parsed.color || null;
-      } catch (e) {
-        hex = null;
-      }
-      if (!hex) {
-        const cmap = { white: "#FFFFFF", black: "#000000", blue: "#1F66FF", red: "#FF0000", brown: "#8A3B0A", grey: "#9CA3AF", gray: "#9CA3AF", green: "#10B981", yellow: "#F59E0B", pink: "#EC4899", purple: "#8B5CF6" };
-        hex = cmap[lower] || null;
-      }
-      colorSet.set(color, { value: color, display, hex });
-    }
-  });
-  // ensure sizes shown in canonical order S, M, L, XL
-  const sizeOrder = ['S', 'M', 'L', 'XL'];
-  const sizes = sizeOrder.filter((k) => sizeSet.has(k)).map((k) => sizeSet.get(k));
-  const colors = Array.from(colorSet.values());
-  const selectedColorDisplay = colors.find((c) => String(c.value) === String(selectedColor))?.display ?? (selectedColor || "");
+  const attributeGroupMap = new Map();
+  variants.forEach((variant) => {
+    getVariantAttributeValues(variant).forEach((attribute) => {
+      const typeKey = getAttributeTypeKey(attribute);
+      const valueKey = getAttributeValueKey(attribute);
+      const meta = getAttributeMeta(attribute);
 
-  const findVariantWithSelection = (color, size) => {
-    return variants.find((v) => {
-      if (Number(v.stock || 0) <= 0) return false;
-      if (color && String(getVariantColor(v)) !== String(color)) return false;
-      if (size && String(getVariantSize(v)) !== String(size)) return false;
-      return true;
+      if (!attributeGroupMap.has(typeKey)) {
+        attributeGroupMap.set(typeKey, {
+          key: typeKey,
+          label: getAttributeTypeLabel(attribute, typeKey),
+          kind: getAttributeKind(attribute),
+          options: new Map(),
+        });
+      }
+
+      const group = attributeGroupMap.get(typeKey);
+      if (!group.options.has(valueKey)) {
+        group.options.set(valueKey, {
+          value: valueKey,
+          display: getAttributeDisplay(attribute),
+          hex: meta.hex ?? meta.color ?? null,
+        });
+      }
     });
+  });
+
+  const attributeGroups = Array.from(attributeGroupMap.values())
+    .map((group) => ({ ...group, options: Array.from(group.options.values()) }))
+    .sort((a, b) => {
+      const order = { color: 0, size: 1, material: 2, default: 3 };
+      return order[a.kind] - order[b.kind];
+    });
+
+  const findVariantWithSelection = (selection) =>
+    variants.find((variant) => {
+      if (Number(variant.stock || 0) <= 0) return false;
+      const variantSelection = getVariantAttributeSelection(variant);
+      return Object.entries(selection).every(
+        ([typeKey, valueKey]) => String(variantSelection[typeKey]) === String(valueKey)
+      );
+    });
+
+  const isAttributeOptionAvailable = (typeKey, valueKey) =>
+    variants.some((variant) => {
+      if (Number(variant.stock || 0) <= 0) return false;
+      const variantSelection = getVariantAttributeSelection(variant);
+      return String(variantSelection[typeKey]) === String(valueKey);
+    });
+
+  const handleAttributeSelect = (typeKey, valueKey) => {
+    const nextSelection = { ...selectedAttributes, [typeKey]: valueKey };
+    const exactVariant = findVariantWithSelection(nextSelection);
+    const matchingVariant = exactVariant ?? variants.find((variant) => {
+      if (Number(variant.stock || 0) <= 0) return false;
+      const variantSelection = getVariantAttributeSelection(variant);
+      return String(variantSelection[typeKey]) === String(valueKey);
+    });
+
+    if (!matchingVariant) return;
+
+    setSelectedVariant(matchingVariant);
+    setSelectedAttributes(getVariantAttributeSelection(matchingVariant));
+    setQuantity(1);
   };
 
   const clearSelection = () => {
-    setSelectedColor("");
-    setSelectedSize("");
+    setSelectedAttributes({});
     setSelectedVariant(null);
   };
 
@@ -365,98 +405,69 @@ export default function ProductDetailPage() {
           <p className="text-base text-on-surface-variant mb-4 text-xl md:text-xl">{product.description}</p>
 
           {variants.length > 0 && (
-            <>
-              {colors.length > 0 && (
-                <div className="mb-4">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h4 className="text-1xl">Màu sắc: </h4>
-                    {selectedColorDisplay ? (
-                      <div className=" font-medium text-1xl text-gray-700">{selectedColorDisplay}</div>
-                    ) : null}
-                  </div>
-                  <div
-                    className="flex items-center gap-3"
-                    onClick={(e) => {
-                      if (e.target === e.currentTarget) clearSelection();
-                    }}
-                  >
-                    {colors.map((c) => {
-                      const available = isColorAvailable(c.value);
-                      return (
-                        <button
-                          key={c.value}
-                          aria-label={c.display}
-                          type="button"
-                          onClick={() => {
-                            if (!available) return;
-                            setSelectedColor(c.value);
-                            const found = findVariantWithSelection(c.value, selectedSize) || findVariantWithSelection(c.value, null);
-                            if (found) {
-                              setSelectedVariant(found);
-                              setSelectedSize(getVariantSize(found) || selectedSize);
-                            } else {
-                              const fallback = findVariantWithSelection(c.value, null);
-                              if (fallback) {
-                                setSelectedVariant(fallback);
-                                setSelectedSize(getVariantSize(fallback) || '');
-                              }
-                            }
-                          }}
-                          disabled={!available}
-                          className={`w-12 h-10 rounded-full border-2 flex items-center justify-center p-1 transition ${selectedColor === c.value ? 'ring-2 ring-blue-600' : ''} ${available ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'}`}
-                          style={{ background: 'transparent' }}
-                        >
-                          <span className="block w-full h-full rounded-full border" style={{ background: c.hex || '#FFFFFF' }} />
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+            <div className="space-y-5">
+              {attributeGroups.map((group) => {
+                const selectedValue = selectedAttributes[group.key];
+                const selectedOption = group.options.find(
+                  (option) => String(option.value) === String(selectedValue)
+                );
 
-              {sizes.length > 0 && (
-                <div className="mb-4">
-                  <h4 className="font-label-sm mb-2 mt-5">Kích cỡ</h4>
-                  <div
-                    className="flex gap-3 mb-3 mt-2"
-                    onClick={(e) => {
-                      if (e.target === e.currentTarget) clearSelection();
-                    }}
-                  >
-                    {sizes.map((s) => {
-                      const available = isSizeAvailable(s.value);
-                      return (
-                        <button
-                          key={s.value}
-                          type="button"
-                          onClick={() => {
-                            if (!available) return;
-                            setSelectedSize(s.value);
-                            const found = findVariantWithSelection(selectedColor, s.value) || findVariantWithSelection(null, s.value);
-                            if (found) {
-                              setSelectedVariant(found);
-                              setSelectedColor(getVariantColor(found) || selectedColor);
-                            } else {
-                              const fallback = findVariantWithSelection(null, s.value);
-                              if (fallback) {
-                                setSelectedVariant(fallback);
-                                setSelectedColor(getVariantColor(fallback) || '');
-                              }
-                            }
-                          }}
-                          disabled={!available}
-                          className={`px-6 py-3 min-w-[72px] border rounded-md text-base font-medium transition-colors ${selectedSize === s.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-800 border-gray-300'} ${available ? '' : 'opacity-40 cursor-not-allowed'}`}
-                        >
-                          {s.display}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                return (
+                  <div key={group.key}>
+                    <div className="mb-2 flex items-center gap-2">
+                      <h4 className="font-label-sm text-on-surface">{group.label}</h4>
+                      {selectedOption && (
+                        <span className="text-sm text-on-surface-variant">— {selectedOption.display}</span>
+                      )}
+                    </div>
+                    <div className="flex flex-wrap gap-3">
+                      {group.options.map((option) => {
+                        const available = isAttributeOptionAvailable(group.key, option.value);
+                        const selected = String(selectedValue) === String(option.value);
 
-              
-            </>
+                        if (group.kind === 'color' && option.hex) {
+                          return (
+                            <button
+                              key={option.value}
+                              type="button"
+                              title={option.display}
+                              aria-label={`${group.label}: ${option.display}`}
+                              disabled={!available}
+                              onClick={() => handleAttributeSelect(group.key, option.value)}
+                              className={`inline-flex h-11 items-center gap-2 rounded-md border px-3 text-sm font-medium transition ${
+                                selected ? 'border-blue-600 bg-blue-50 text-blue-700' : 'border-gray-300 bg-white text-gray-800'
+                              } ${available ? 'cursor-pointer hover:border-blue-500' : 'cursor-not-allowed opacity-35'}`}
+                            >
+                              <span
+                                className="block h-6 w-6 rounded-full border border-black/15"
+                                style={{ backgroundColor: option.hex }}
+                              />
+                              <span>{option.display}</span>
+                            </button>
+                          );
+                        }
+
+                        return (
+                          <button
+                            key={option.value}
+                            type="button"
+                            disabled={!available}
+                            onClick={() => handleAttributeSelect(group.key, option.value)}
+                            className={`min-w-18 rounded-md border px-5 py-2.5 text-sm font-medium transition-colors ${
+                              selected
+                                ? 'border-blue-600 bg-blue-600 text-white'
+                                : 'border-gray-300 bg-white text-gray-800 hover:border-blue-500'
+                            } ${available ? '' : 'cursor-not-allowed opacity-35'}`}
+                          >
+                            {option.display}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           )}
 
           <div className="flex items-center gap-4 mt-7">

@@ -76,12 +76,14 @@ const getStatusBadgeClass = (status) => {
 };
 
 const getOrderStatusLabel = (status) => {
-  if (status === 'pending') return 'Chờ xử lý';
-  if (status === 'processing') return 'Đang xử lý';
-  if (status === 'completed') return 'Hoàn thành';
-  if (status === 'cancelled') return 'Đã hủy';
-  if (status === 'returned') return 'Trả hàng';
-  if (status === 'paid') return 'Đã thanh toán';
+  const normalized = String(status ?? '').toUpperCase();
+  if (['PENDING', 'PENDING_PAYMENT'].includes(normalized)) return 'Chờ thanh toán';
+  if (['PROCESSING', 'CONFIRMED'].includes(normalized)) return 'Đã xác nhận';
+  if (normalized === 'SHIPPING') return 'Đang giao';
+  if (normalized === 'COMPLETED') return 'Hoàn thành';
+  if (normalized === 'CANCELLED') return 'Đã hủy';
+  if (normalized === 'RETURNED') return 'Trả hàng';
+  if (normalized === 'PAID') return 'Đã thanh toán';
   return status ?? '-';
 };
 
@@ -94,8 +96,11 @@ const getOrderStatusBadgeClass = (status) => {
   if (statusLower === 'pending' || statusLower === 'chờ xử lý' || statusLower === 'pending_payment' || statusLower === 'chờ thanh toán') {
     return 'bg-amber-100 text-amber-800';
   }
-  if (statusLower === 'processing' || statusLower === 'confirmed' || statusLower === 'đang xử lý' || statusLower === 'đang giao') {
+  if (statusLower === 'processing' || statusLower === 'confirmed' || statusLower === 'đang xử lý' || statusLower === 'đã xác nhận') {
     return 'bg-blue-100 text-blue-800';
+  }
+  if (statusLower === 'shipping' || statusLower === 'đang giao') {
+    return 'bg-cyan-100 text-cyan-800';
   }
   if (statusLower === 'cancelled' || statusLower === 'đã hủy') {
     return 'bg-red-100 text-red-800';

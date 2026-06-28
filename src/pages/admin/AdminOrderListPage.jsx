@@ -26,8 +26,9 @@ const formatDate = (value) => {
 
 const normalizeOrderStatus = (status) => {
   const normalized = `${status ?? ''}`.toLowerCase();
-  if (['pending', 'pending_payment', 'chờ xử lý', 'chờ thanh toán'].includes(normalized)) return 'pending';
-  if (['processing', 'confirmed', 'shipping', 'đang xử lý', 'đã xác nhận', 'đang giao'].includes(normalized)) return 'processing';
+  if (['pending', 'pending_payment', 'chờ xử lý', 'chờ thanh toán'].includes(normalized)) return 'pending_payment';
+  if (['processing', 'confirmed', 'đang xử lý', 'đã xác nhận'].includes(normalized)) return 'confirmed';
+  if (['shipping', 'đang giao'].includes(normalized)) return 'shipping';
   if (['completed', 'hoàn thành', 'done'].includes(normalized)) return 'completed';
   if (['cancelled', 'canceled', 'cancel', 'đã hủy'].includes(normalized)) return 'cancelled';
   if (['returned', 'return', 'trả hàng'].includes(normalized)) return 'returned';
@@ -37,10 +38,12 @@ const normalizeOrderStatus = (status) => {
 const getOrderStatusLabel = (status) => {
   const normalized = normalizeOrderStatus(status);
   switch (normalized) {
-    case 'pending':
-      return 'Chờ xử lý';
-    case 'processing':
-      return 'Đang xử lý';
+    case 'pending_payment':
+      return 'Chờ thanh toán';
+    case 'confirmed':
+      return 'Đã xác nhận';
+    case 'shipping':
+      return 'Đang giao';
     case 'completed':
       return 'Hoàn thành';
     case 'cancelled':
@@ -55,10 +58,12 @@ const getOrderStatusLabel = (status) => {
 const getOrderStatusClasses = (status) => {
   const normalized = normalizeOrderStatus(status);
   switch (normalized) {
-    case 'pending':
+    case 'pending_payment':
       return 'bg-amber-100 text-amber-700';
-    case 'processing':
+    case 'confirmed':
       return 'bg-blue-100 text-blue-700';
+    case 'shipping':
+      return 'bg-cyan-100 text-cyan-700';
     case 'completed':
       return 'bg-emerald-100 text-emerald-700';
     case 'cancelled':
@@ -72,18 +77,18 @@ const getOrderStatusClasses = (status) => {
 
 const mapStatusFilter = (filter) => {
   switch (filter) {
-    case 'pending':
-      return 'PENDING_PAYMENT';
-    case 'processing':
-      return 'CONFIRMED';
+    case 'pending_payment':
+      return 'pending_payment';
+    case 'confirmed':
+      return 'confirmed';
     case 'shipping':
-      return 'SHIPPING';
+      return 'shipping';
     case 'completed':
-      return 'COMPLETED';
+      return 'completed';
     case 'cancelled':
-      return 'CANCELLED';
+      return 'cancelled';
     case 'returned':
-      return 'RETURNED';
+      return 'returned';
     default:
       return undefined;
   }
@@ -104,11 +109,10 @@ const AdminOrderListPage = () => {
     setLoading(true);
     setError(null);
     try {
-      // Always fetch without status filter (do client-side filtering instead)
-      // This avoids issues with backend status enum mismatches
       const params = {
         page: targetPage,
         per_page: targetPerPage,
+        status: mapStatusFilter(targetStatus),
       };
 
       if (targetSearch.trim()) {
@@ -206,14 +210,15 @@ const AdminOrderListPage = () => {
     return orders.reduce(
       (acc, order) => {
         const normalized = normalizeOrderStatus(order.status);
-        if (normalized === 'pending') acc.pending += 1;
-        if (normalized === 'processing') acc.processing += 1;
+        if (normalized === 'pending_payment') acc.pendingPayment += 1;
+        if (normalized === 'confirmed') acc.confirmed += 1;
+        if (normalized === 'shipping') acc.shipping += 1;
         if (normalized === 'completed') acc.completed += 1;
         if (normalized === 'cancelled') acc.cancelled += 1;
         if (normalized === 'returned') acc.returned += 1;
         return acc;
       },
-      { pending: 0, processing: 0, completed: 0, cancelled: 0, returned: 0 }
+      { pendingPayment: 0, confirmed: 0, shipping: 0, completed: 0, cancelled: 0, returned: 0 }
     );
   }, [orders]);
 
@@ -266,18 +271,22 @@ const AdminOrderListPage = () => {
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-gutter">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-gutter">
               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-lg">
                 <p className="text-label-sm text-secondary">Tổng đơn hàng</p>
                 <h3 className="text-headline-md font-headline-md mt-1">{pagination?.total ?? orders.length}</h3>
               </div>
               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-lg">
-                <p className="text-label-sm text-secondary">Chờ xử lý</p>
-                <h3 className="text-headline-md font-headline-md mt-1">{counts.pending}</h3>
+                <p className="text-label-sm text-secondary">Chờ thanh toán</p>
+                <h3 className="text-headline-md font-headline-md mt-1">{counts.pendingPayment}</h3>
+              </div>
+              <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-lg">
+                <p className="text-label-sm text-secondary">Đã xác nhận</p>
+                <h3 className="text-headline-md font-headline-md mt-1">{counts.confirmed}</h3>
               </div>
               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-lg">
                 <p className="text-label-sm text-secondary">Đang giao</p>
-                <h3 className="text-headline-md font-headline-md mt-1">{counts.processing}</h3>
+                <h3 className="text-headline-md font-headline-md mt-1">{counts.shipping}</h3>
               </div>
               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-lg">
                 <p className="text-label-sm text-secondary">Doanh thu</p>
@@ -290,8 +299,9 @@ const AdminOrderListPage = () => {
                 <div className="flex flex-wrap gap-2">
                   {[
                     { value: 'all', label: 'Tất cả' },
-                    { value: 'pending', label: 'Chờ xử lý' },
-                    { value: 'processing', label: 'Đang xử lý' },
+                    { value: 'pending_payment', label: 'Chờ thanh toán' },
+                    { value: 'confirmed', label: 'Đã xác nhận' },
+                    { value: 'shipping', label: 'Đang giao' },
                     { value: 'completed', label: 'Hoàn thành' },
                     { value: 'cancelled', label: 'Đã hủy' },
                     { value: 'returned', label: 'Trả hàng' },

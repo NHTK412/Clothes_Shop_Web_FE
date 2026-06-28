@@ -64,6 +64,7 @@ const AdminSidebar = () => {
   const menuItems = [
     { id: 'dashboard', label: 'Thống kê', icon: 'dashboard', path: '/admin/dashboard' },
     { id: 'products', label: 'Sản phẩm', icon: 'inventory_2', path: '/admin/products' },
+    { id: 'promotions', label: 'Khuyến mãi', icon: 'sell', path: '/admin/promotions' },
     { id: 'orders', label: 'Đơn hàng', icon: 'shopping_cart', path: '/admin/orders' },
     { id: 'customers', label: 'Khách hàng', icon: 'group', path: '/admin/customers' },
     { id: 'categories', label: 'Danh mục', icon: 'category', path: '/admin/categories' },
