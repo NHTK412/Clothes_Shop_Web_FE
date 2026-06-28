@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
 import OrderService from '../../services/OrderService';
 
 const formatMoney = (value) => {
@@ -92,7 +90,6 @@ const mapStatusFilter = (filter) => {
 };
 
 const AdminOrderListPage = () => {
-  const [activeMenu, setActiveMenu] = useState('orders');
   const [orders, setOrders] = useState([]);
   const [pagination, setPagination] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -253,12 +250,8 @@ const AdminOrderListPage = () => {
   };
 
   return (
-    <div className="flex">
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-      <div className="flex-1 ml-64">
-        <AdminHeader />
-        <main className="pt-16 min-h-screen bg-surface">
-          <div className="p-lg max-w-[1280px] mx-auto w-full space-y-lg">
+    <main className="pt-16 min-h-screen bg-surface">
+      <div className="p-lg max-w-[1280px] mx-auto w-full space-y-lg">
             <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
               <div>
                 <h2 className="font-headline-md text-headline-md text-on-background">Quản lý đơn hàng</h2>
@@ -474,10 +467,8 @@ const AdminOrderListPage = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </main>
       </div>
-    </div>
+    </main>
   );
 };
 

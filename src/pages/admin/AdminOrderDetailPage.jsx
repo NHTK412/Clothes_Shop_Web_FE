@@ -1,7 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
 import OrderService from '../../services/OrderService';
 
 const formatMoney = (value) => {
@@ -105,7 +103,6 @@ const getTimelineSteps = (status) => {
 
 const AdminOrderDetailPage = () => {
   const { id } = useParams();
-  const [activeMenu, setActiveMenu] = useState('orders');
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -143,12 +140,8 @@ const AdminOrderDetailPage = () => {
   const timelineSteps = useMemo(() => getTimelineSteps(order?.status), [order]);
 
   return (
-    <div className="flex">
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-      <div className="flex-1 ml-64">
-        <AdminHeader />
-        <main className="pt-16 min-h-screen bg-surface">
-          <div className="p-lg max-w-[1280px] mx-auto w-full space-y-lg">
+    <main className="pt-16 min-h-screen bg-surface">
+      <div className="p-lg max-w-[1280px] mx-auto w-full space-y-lg">
             <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
               <div>
                 <nav className="flex items-center gap-2 text-label-sm text-on-surface-variant mb-2">
@@ -340,10 +333,8 @@ const AdminOrderDetailPage = () => {
                 </div>
               </>
             )}
-          </div>
-        </main>
       </div>
-    </div>
+    </main>
   );
 };
 

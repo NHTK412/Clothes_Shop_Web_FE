@@ -1,10 +1,7 @@
 import { useState } from 'react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
 import PageHeader from '../../components/admin/PageHeader';
 
 const AdminSettingsPage = () => {
-  const [activeMenu, setActiveMenu] = useState('settings');
   const [settings, setSettings] = useState({
     storeName: 'Clothes Shop',
     storeEmail: 'contact@clothesshop.com',
@@ -56,18 +53,8 @@ const AdminSettingsPage = () => {
   };
 
   return (
-    <div className="flex">
-      {/* Sidebar */}
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-
-      {/* Main Content */}
-      <div className="flex-1 ml-64">
-        {/* Header */}
-        <AdminHeader />
-
-        {/* Main Content Area */}
-        <main className="pt-16 min-h-screen bg-surface">
-          <div className="max-w-[1280px] mx-auto p-gutter space-y-lg">
+    <main className="pt-16 min-h-screen bg-surface">
+      <div className="max-w-[1280px] mx-auto p-gutter space-y-lg">
             {/* Page Header */}
             <PageHeader title="Cài đặt" subtitle="Quản lý cấu hình cửa hàng" />
 
@@ -238,10 +225,8 @@ const AdminSettingsPage = () => {
                 </button>
               </div>
             </div>
-          </div>
-        </main>
       </div>
-    </div>
+    </main>
   );
 };
 

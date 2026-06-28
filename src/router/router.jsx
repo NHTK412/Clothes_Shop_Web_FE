@@ -4,6 +4,7 @@ import ClientLayout from "../layouts/ClientLayout";
 import RegisterPage from "../pages/auth/RegisterPage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import PublicRouter from "./PublicRouter";
+import CustomerRouter from "./CustomerRouter";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 import HomePage from "../pages/customer/HomePage";
 import ProductListPage from "../pages/customer/ProductListPage";
@@ -81,7 +82,11 @@ const router = createBrowserRouter([
     },
     {
         path: "/",
-        element: <ClientLayout />,
+        element: (
+            <CustomerRouter>
+                <ClientLayout />
+            </CustomerRouter>
+        ),
         children: [
             {
                 index: true,

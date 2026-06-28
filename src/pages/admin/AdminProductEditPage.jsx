@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { notification } from 'antd';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
 import AttributeService from '../../services/AttributeService';
 import ProductsService from '../../services/ProductsService';
 
@@ -96,7 +94,6 @@ const buildVariantSku = (productName, row, attributeTypes) => {
 const AdminProductEditPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [activeMenu, setActiveMenu] = useState('products');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
@@ -328,27 +325,17 @@ const AdminProductEditPage = () => {
 
   if (loading) {
     return (
-      <div className="flex">
-        <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-        <div className="flex-1 ml-64">
-          <AdminHeader />
-          <main className="pt-16 min-h-screen bg-surface">
-            <div className="max-w-[1280px] mx-auto p-gutter text-center text-on-surface-variant">
-              Đang tải dữ liệu chỉnh sửa...
-            </div>
-          </main>
+      <main className="pt-16 min-h-screen bg-surface">
+        <div className="max-w-[1280px] mx-auto p-gutter text-center text-on-surface-variant">
+          Đang tải dữ liệu chỉnh sửa...
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="flex">
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-      <div className="flex-1 ml-64">
-        <AdminHeader />
-        <main className="pt-16 min-h-screen bg-surface">
-          <div className="max-w-[1280px] mx-auto p-gutter space-y-lg">
+    <main className="pt-16 min-h-screen bg-surface">
+      <div className="max-w-[1280px] mx-auto p-gutter space-y-lg">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-md">
               <div>
                 <h1 className="font-headline-md text-headline-md text-on-background">Chỉnh sửa sản phẩm</h1>
@@ -575,10 +562,8 @@ const AdminProductEditPage = () => {
                 </button>
               </div>
             </form>
-          </div>
-        </main>
       </div>
-    </div>
+    </main>
   );
 };
 

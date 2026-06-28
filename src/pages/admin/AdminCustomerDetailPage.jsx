@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
 import CustomerService from '../../services/CustomerService';
 import OrderService from '../../services/OrderService';
 
@@ -113,7 +111,6 @@ const getOrderStatusBadgeClass = (status) => {
 
 const AdminCustomerDetailPage = () => {
   const { id } = useParams();
-  const [activeMenu, setActiveMenu] = useState('customers');
   const [customer, setCustomer] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -180,12 +177,8 @@ const AdminCustomerDetailPage = () => {
     : 0;
 
   return (
-    <div className="flex">
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-      <div className="flex-1 ml-64">
-        <AdminHeader />
-        <main className="pt-16 min-h-screen bg-surface py-lg">
-          <div className="p-lg max-w-[1280px] mx-auto">
+    <main className="pt-16 min-h-screen bg-surface py-lg">
+      <div className="p-lg max-w-[1280px] mx-auto">
             <nav className="flex items-center gap-2 text-label-sm text-on-surface-variant mb-md">
               <Link className="hover:text-primary" to="/admin">Trang chủ</Link>
               <span className="material-symbols-outlined text-[16px]">chevron_right</span>
@@ -333,10 +326,8 @@ const AdminCustomerDetailPage = () => {
                 </div>
               </>
             )}
-          </div>
-        </main>
       </div>
-    </div>
+    </main>
   );
 };
 

@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { notification } from 'antd';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import ProductsService from '../../services/ProductsService';
 
@@ -23,7 +21,6 @@ const AdminProductDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [product, setProduct] = useState(null);
-  const [activeMenu, setActiveMenu] = useState('products');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
@@ -124,27 +121,17 @@ const AdminProductDetailPage = () => {
 
   if (loading) {
     return (
-      <div className="flex">
-        <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-        <div className="flex-1 ml-64">
-          <AdminHeader />
-          <main className="pt-16 min-h-screen bg-surface">
-            <div className="max-w-[1280px] mx-auto p-gutter text-center text-on-surface-variant">
-              Đang tải chi tiết sản phẩm...
-            </div>
-          </main>
+      <main className="pt-16 min-h-screen bg-surface">
+        <div className="max-w-[1280px] mx-auto p-gutter text-center text-on-surface-variant">
+          Đang tải chi tiết sản phẩm...
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="flex">
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-      <div className="flex-1 ml-64">
-        <AdminHeader />
-        <main className="pt-16 min-h-screen bg-surface">
-          <div className="max-w-[1280px] mx-auto p-gutter space-y-lg">
+    <main className="pt-16 min-h-screen bg-surface">
+      <div className="max-w-[1280px] mx-auto p-gutter space-y-lg">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-md">
               <div>
                 <h1 className="font-headline-md text-headline-md text-on-background">Chi tiết sản phẩm</h1>
@@ -271,10 +258,8 @@ const AdminProductDetailPage = () => {
                 Sản phẩm không tồn tại hoặc đã bị xóa.
               </div>
             )}
-          </div>
-        </main>
       </div>
-    </div>
+    </main>
   );
 };
 

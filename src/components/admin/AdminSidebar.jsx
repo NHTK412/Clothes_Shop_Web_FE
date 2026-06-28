@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import ConfirmModal from './ConfirmModal';
 import ProfileService from '../../services/ProfileService';
@@ -32,8 +32,9 @@ const getRoleLabel = (profile) => {
   return rawRole || 'Quản trị viên';
 };
 
-const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
+const AdminSidebar = () => {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [avatarError, setAvatarError] = useState(false);
@@ -70,7 +71,6 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
   ];
 
   const handleMenuClick = (item) => {
-    setActiveMenu(item.id);
     navigate(item.path);
   };
 
@@ -99,6 +99,7 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
   const displayName = getDisplayName(profile);
   const avatarUrl = resolveAvatar(profile?.avatar);
   const roleLabel = getRoleLabel(profile);
+  const activeMenu = pathname.split('/')[2] || 'dashboard';
 
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col py-md px-sm z-40">

@@ -1,21 +1,15 @@
-/* eslint-disable no-unused-vars */
-import React from "react";
 import { Outlet } from "react-router-dom";
-import {
-  LayoutDashboard,
-  Users,
-  MessageSquare,
-  BarChart3,
-  Settings,
-} from "lucide-react";
+import AdminHeader from "../components/admin/AdminHeader";
+import AdminSidebar from "../components/admin/AdminSidebar";
 
 const AdminLayout = () => {
   return (
-    <div className="flex flex-col min-h-screen bg-white">
-      {/* Main content */}
-      <main className="flex-1">
+    <div className="flex min-h-screen bg-white">
+      <AdminSidebar />
+      <div className="ml-64 flex-1">
+        <AdminHeader />
         <Outlet />
-      </main>
+      </div>
     </div>
   );
 };

@@ -1,8 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { notification } from 'antd';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
 import ProductFilters from '../../components/admin/ProductFilters';
 import ProductTable from '../../components/admin/ProductTable';
 import ProductPagination from '../../components/admin/ProductPagination';
@@ -42,7 +40,6 @@ const getProductCategoryIdentifiers = (product) => {
 };
 
 const AdminProductListPage = () => {
-  const [activeMenu, setActiveMenu] = useState('products');
   const [currentPage, setCurrentPage] = useState(1);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -227,18 +224,9 @@ const AdminProductListPage = () => {
   };
 
   return (
-    <div className="flex">
-      {/* Sidebar */}
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-
-      {/* Main Content */}
-      <div className="flex-1 ml-64">
-        {/* Header */}
-        <AdminHeader />
-
-        {/* Main Content Area */}
-        <main className="pt-16 min-h-screen bg-surface">
-          <div className="p-lg max-w-[1280px] mx-auto w-full">
+    <>
+      <main className="pt-16 min-h-screen bg-surface">
+        <div className="p-lg max-w-[1280px] mx-auto w-full">
             {/* Error Alert */}
             {error && (
               <div className="mb-md p-md bg-error-container text-on-error-container rounded-lg text-body-sm">
@@ -314,9 +302,8 @@ const AdminProductListPage = () => {
                 />
               </>
             )}
-          </div>
-        </main>
       </div>
+      </main>
 
       {/* Add Product Modal */}
       <AddProductModal
@@ -324,7 +311,7 @@ const AdminProductListPage = () => {
         onClose={() => setIsModalOpen(false)}
         onProductAdded={handleProductAdded}
       />
-    </div>
+    </>
   );
 };
 

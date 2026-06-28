@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
 import CustomerService from '../../services/CustomerService';
 
 const normalizeCustomerName = (customer) => {
@@ -37,7 +35,6 @@ const normalizeCreatedAt = (customer) => {
 };
 
 const AdminCustomerListPage = () => {
-  const [activeMenu, setActiveMenu] = useState('customers');
   const [customers, setCustomers] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
   const [pagination, setPagination] = useState(null);
@@ -153,12 +150,8 @@ const AdminCustomerListPage = () => {
   };
 
   return (
-    <div className="flex">
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-      <div className="flex-1 ml-64">
-        <AdminHeader />
-        <main className="pt-16 min-h-screen bg-surface">
-          <div className="p-lg max-w-[1280px] mx-auto w-full space-y-lg">
+    <main className="pt-16 min-h-screen bg-surface">
+      <div className="p-lg max-w-[1280px] mx-auto w-full space-y-lg">
             <div className="flex justify-between items-end">
               <div>
                 <h2 className="font-headline-md text-headline-md text-on-background">Quản lý khách hàng</h2>
@@ -409,10 +402,8 @@ const AdminCustomerListPage = () => {
                 </div>
               </div>
             </div>
-          </div>
-        </main>
       </div>
-    </div>
+    </main>
   );
 };
 

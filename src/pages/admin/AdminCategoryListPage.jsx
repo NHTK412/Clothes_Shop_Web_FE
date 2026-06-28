@@ -1,7 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { notification } from 'antd';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import ProductsService from '../../services/ProductsService';
 
@@ -36,7 +34,6 @@ const flattenCategories = (categories = [], parentName = null, level = 0) => {
 };
 
 const AdminCategoryListPage = () => {
-  const [activeMenu, setActiveMenu] = useState('categories');
   const [categories, setCategories] = useState([]);
   const [sortConfig, setSortConfig] = useState({ key: 'name', direction: 'asc' });
   const [isLoading, setIsLoading] = useState(false);
@@ -192,14 +189,8 @@ const AdminCategoryListPage = () => {
   );
 
   return (
-    <div className="flex">
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-
-      <div className="flex-1 ml-64">
-        <AdminHeader />
-
-        <main className="pt-16 min-h-screen bg-surface">
-          <div className="p-lg max-w-[1280px] mx-auto w-full">
+    <main className="pt-16 min-h-screen bg-surface">
+      <div className="p-lg max-w-[1280px] mx-auto w-full">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-lg">
               <div>
                 <h2 className="font-headline-md text-headline-md text-on-background">Danh mục</h2>
@@ -396,10 +387,8 @@ const AdminCategoryListPage = () => {
               onConfirm={confirmDeleteCategory}
               onCancel={cancelDeleteCategory}
             />
-          </div>
-        </main>
       </div>
-    </div>
+    </main>
   );
 };
 

@@ -1,6 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import AdminSidebar from '../../components/admin/AdminSidebar';
-import AdminHeader from '../../components/admin/AdminHeader';
 import PageHeader from '../../components/admin/PageHeader';
 import MetricsSection from '../../components/admin/MetricsSection';
 import ChartsSection from '../../components/admin/ChartsSection';
@@ -37,7 +35,6 @@ const normalizeOrderStatus = (status) => {
 };
 
 const AdminDashboardPage = () => {
-  const [activeMenu, setActiveMenu] = useState('dashboard');
   const [timeRange, setTimeRange] = useState('7days');
   const [dashboardData, setDashboardData] = useState({ products: [], orders: [], categories: [], customers: [], profile: null, revenue: 0, orderCount: 0, errors: [] });
   const [isLoading, setIsLoading] = useState(true);
@@ -193,18 +190,8 @@ const AdminDashboardPage = () => {
   }, [dashboardData.products]);
 
   return (
-    <div className="flex">
-      {/* Sidebar */}
-      <AdminSidebar activeMenu={activeMenu} setActiveMenu={setActiveMenu} />
-
-      {/* Main Content */}
-      <div className="flex-1 ml-64">
-        {/* Header */}
-        <AdminHeader />
-
-        {/* Main Content Area */}
-        <main className="pt-16 min-h-screen bg-surface">
-          <div className="max-w-[1280px] mx-auto p-gutter space-y-lg">
+    <main className="pt-16 min-h-screen bg-surface">
+      <div className="max-w-[1280px] mx-auto p-gutter space-y-lg">
             {/* Page Header with Time Range */}
             <PageHeader timeRange={timeRange} setTimeRange={setTimeRange} />
 
@@ -227,10 +214,8 @@ const AdminDashboardPage = () => {
 
             {/* Orders Table */}
             <OrdersTable orders={filteredOrders} isLoading={isLoading} />
-          </div>
-        </main>
       </div>
-    </div>
+    </main>
   );
 };
 
