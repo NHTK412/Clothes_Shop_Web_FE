@@ -9,6 +9,18 @@ import HomePage from "../pages/customer/HomePage";
 import ProductListPage from "../pages/customer/ProductListPage";
 import ProductDetailPage from "../pages/customer/ProductDetailPage";
 import CartDetailPage from "../pages/customer/CartDetailPage";
+import CategoryPage from "../pages/customer/CategoryPage";
+import AdminLayout from "../layouts/AdminLayout";
+import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
+import AdminProductListPage from "../pages/admin/AdminProductListPage";
+import AdminProductDetailPage from "../pages/admin/AdminProductDetailPage";
+import AdminProductEditPage from "../pages/admin/AdminProductEditPage";
+import AdminCategoryListPage from "../pages/admin/AdminCategoryListPage";
+import AdminCustomerListPage from "../pages/admin/AdminCustomerListPage";
+import AdminCustomerDetailPage from "../pages/admin/AdminCustomerDetailPage";
+import AdminOrderListPage from "../pages/admin/AdminOrderListPage";
+import AdminOrderDetailPage from "../pages/admin/AdminOrderDetailPage";
+import AdminSettingsPage from "../pages/admin/AdminSettingsPage";
 import CheckoutPage from "../pages/customer/CheckoutPage";
 import ReturnPage from "../pages/customer/ReturnPage";
 import OrdersPage from "../pages/customer/OrdersPage";
@@ -17,6 +29,56 @@ import ProfilePage from "../pages/customer/ProfilePage";
 import FavoriteProductsPage from "../pages/customer/FavoriteProductsPage";
 
 const router = createBrowserRouter([
+    {
+        path: "/admin",
+        element: <AdminLayout />,
+        children: [
+            {
+                index: true,
+                element: <AdminDashboardPage />
+            },
+            {
+                path: "dashboard",
+                element: <AdminDashboardPage />
+            },
+            {
+                path: "products",
+                element: <AdminProductListPage />
+            },
+            {
+                path: "products/:id",
+                element: <AdminProductDetailPage />
+            },
+            {
+                path: "products/:id/edit",
+                element: <AdminProductEditPage />
+            },
+            {
+                path: "customers",
+                element: <AdminCustomerListPage />
+            },
+            {
+                path: "customers/:id",
+                element: <AdminCustomerDetailPage />
+            },
+            {
+                path: "orders",
+                element: <AdminOrderListPage />
+            },
+            {
+                path: "orders/:id",
+                element: <AdminOrderDetailPage />
+            },
+            {
+                path: "categories",
+                element: <AdminCategoryListPage />
+            },
+            {
+                path: "settings",
+                element: <AdminSettingsPage />
+            }
+        ]
+    },
     {
         path: "/",
         element: <ClientLayout />,
@@ -29,6 +91,21 @@ const router = createBrowserRouter([
                 path: "products",
                 element: <ProductListPage />
             },
+            {
+                path: "categories",
+                element: <CategoryPage />
+            },
+            {
+                path: "products/:id",
+                element: <ProductDetailPage />
+            },
+            {
+                path: "cart",
+                element: <CartDetailPage />
+            },
+            {
+                path: "login",
+                element: (
             {
                 path: "products/:id",
                 element: <ProductDetailPage />

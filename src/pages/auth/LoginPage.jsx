@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import { EyeInvisibleOutlined, EyeOutlined, LoadingOutlined } from "@ant-design/icons";
 import { Icon } from "@iconify/react";
 import { useState } from "react";
@@ -59,17 +60,47 @@ const LoginPage = () => {
             };
 
             const response = await login(loginData);
+            const user = response?.user || {};
+            const role = String(response?.role || user?.role || user?.role_name || "ROLE_CUSTOMER").toUpperCase();
+            const isAdmin = Boolean(
+                response?.isAdmin ||
+                user?.is_admin === true ||
+                user?.isAdmin === true ||
+                role === "ROLE_ADMIN" ||
+                role === "ADMIN" ||
+                role === "SUPER_ADMIN"
+            );
 
             notification.success({
-                title: "Đăng nhập thành công",
-                description: "Bạn đã đăng nhập thành công. Chuyển hướng đến trang chủ...",
-            })
-
-            Cookies.set("access_token", response.access_token, {
-                expires: response.expires_in / (60 * 60 * 24)
+                message: "Đăng nhập thành công",
+                description: isAdmin ? "Bạn đã đăng nhập với quyền quản trị. Đang chuyển đến trang quản trị..." : "Bạn đã đăng nhập thành công. Chuyển hướng đến trang chủ...",
             });
 
-            navigate('/');
+            const expiresInDays = Number(response?.expires_in || 7) / (60 * 60 * 24);
+            const token = response?.access_token || response?.token;
+
+            console.log("[LoginPage] Login response received:");
+            console.log(`  Role detected: ${role}`);
+            console.log(`  Is Admin: ${isAdmin}`);
+            console.log(`  Token: ${token?.substring(0, 30)}...`);
+
+            if (token) {
+                Cookies.set("access_token", token, {
+                    expires: Number.isFinite(expiresInDays) && expiresInDays > 0 ? expiresInDays : 7,
+                    path: "/",
+                });
+                window.localStorage.setItem("access_token", token);
+                console.log("[LoginPage] Token saved to cookies & localStorage");
+            }
+
+            Cookies.set("user_role", role, {
+                expires: Number.isFinite(expiresInDays) && expiresInDays > 0 ? expiresInDays : 7,
+                path: "/",
+            });
+            window.localStorage.setItem("user_role", role);
+            console.log(`[LoginPage] Role '${role}' saved to cookies & localStorage`);
+
+            navigate(isAdmin ? "/admin" : "/");
 
         } catch (error) {
             console.log("Login error:", error);

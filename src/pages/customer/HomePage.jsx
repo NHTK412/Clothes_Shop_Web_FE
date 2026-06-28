@@ -1,8 +1,16 @@
 /* eslint-disable no-unused-vars */
+import { notification } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import productsService from "../../services/ProductsService";
 import Hero from "../../components/Hero";
+
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
+const getCurrentPrice = (price, discount) => {
+  const basePrice = Number(price || 0);
+  const discountAmount = Number(discount || 0);
+  return Math.max(basePrice - discountAmount, 0);
+};
 
 export default function HomePage() {
 	const [hero, setHero] = useState({

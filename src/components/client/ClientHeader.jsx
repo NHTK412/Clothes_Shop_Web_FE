@@ -57,7 +57,7 @@ const ClientHeader = () => {
                             to="/favorites">Yêu thích</Link>
                     ) : null}
                     <Link className="font-label-md text-label-md text-secondary hover:text-primary transition-colors duration-200"
-                        to="#">Danh Mục</Link>
+                        to="/categories">Danh Mục</Link>
                     <Link className="font-label-md text-label-md text-secondary hover:text-primary transition-colors duration-200"
                         to="#">Tin Tức</Link>
                 </nav>
