@@ -40,9 +40,9 @@ const ProductTable = ({ products = [], onEdit, onDelete, onView, sortConfig, onS
     const currentPrice = getCurrentPrice(basePrice, discountAmount);
     const visibleDiscount = getDiscountAmount(basePrice, discountAmount);
     return {
-      basePrice: basePrice != null && !isNaN(Number(basePrice)) ? formatCurrency(basePrice) : 'N/A',
+      basePrice: basePrice != null && !isNaN(Number(basePrice)) ? formatCurrency(basePrice) : 'Không có',
       discountAmount: visibleDiscount ? formatCurrency(visibleDiscount) : '0₫',
-      currentPrice: isNaN(currentPrice) ? 'N/A' : formatCurrency(currentPrice),
+      currentPrice: isNaN(currentPrice) ? 'Không có' : formatCurrency(currentPrice),
       hasDiscount: visibleDiscount > 0,
     };
   };
@@ -74,19 +74,19 @@ const ProductTable = ({ products = [], onEdit, onDelete, onView, sortConfig, onS
           <thead>
             <tr className="border-b border-outline-variant bg-surface-container-low">
               <th className="px-md py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                {renderSortHeader('name', 'Product')}
+                {renderSortHeader('name', 'Sản phẩm')}
               </th>
               <th className="px-md py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                {renderSortHeader('category', 'Category')}
+                {renderSortHeader('category', 'Danh mục')}
               </th>
               <th className="px-md py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                {renderSortHeader('price', 'Price')}
+                {renderSortHeader('price', 'Giá')}
               </th>
               <th className="px-md py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">
-                {renderSortHeader('stock', 'Stock')}
+                {renderSortHeader('stock', 'Tồn kho')}
               </th>
               <th className="px-md py-4 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider text-right">
-                Actions
+                Hành động
               </th>
             </tr>
           </thead>
@@ -135,9 +135,9 @@ const ProductTable = ({ products = [], onEdit, onDelete, onView, sortConfig, onS
                   {(() => {
                     const stockValue = getStockValue(product);
                     return stockValue === 0 ? (
-                      <span className="text-error">Out of Stock</span>
+                      <span className="text-error">Hết hàng</span>
                     ) : (
-                      `${stockValue} in stock`
+                      `Còn ${stockValue} sản phẩm`
                     );
                   })()}
                 </td>
@@ -146,21 +146,21 @@ const ProductTable = ({ products = [], onEdit, onDelete, onView, sortConfig, onS
                     <button
                       onClick={() => onView(product.id)}
                       className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-all"
-                      title="View"
+                      title="Xem"
                     >
                       <span className="material-symbols-outlined text-[20px]">visibility</span>
                     </button>
                     <button
                       onClick={() => onEdit(product.id)}
                       className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-all"
-                      title="Edit"
+                      title="Chỉnh sửa"
                     >
                       <span className="material-symbols-outlined text-[20px]">edit</span>
                     </button>
                     <button
                       onClick={() => onDelete(product.id, product.name)}
                       className="p-2 text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-all"
-                      title="Delete"
+                      title="Xóa"
                     >
                       <span className="material-symbols-outlined text-[20px]">delete</span>
                     </button>

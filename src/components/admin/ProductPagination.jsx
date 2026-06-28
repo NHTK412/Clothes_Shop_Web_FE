@@ -31,7 +31,7 @@ const ProductPagination = ({ currentPage, totalPages, totalItems, itemsPerPage, 
   return (
     <div className="px-md py-4 bg-surface-container-low flex flex-col md:flex-row items-center justify-between gap-md border-t border-outline-variant">
       <p className="font-label-sm text-label-sm text-on-surface-variant">
-        Showing {startItem} to {endItem} of {totalItems} results
+        Hiển thị {startItem} đến {endItem} trong tổng số {totalItems} kết quả
       </p>
       <div className="flex items-center gap-xs">
         <button

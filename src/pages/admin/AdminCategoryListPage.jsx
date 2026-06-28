@@ -202,7 +202,7 @@ const AdminCategoryListPage = () => {
           <div className="p-lg max-w-[1280px] mx-auto w-full">
             <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-lg">
               <div>
-                <h2 className="font-headline-md text-headline-md text-on-background">Categories</h2>
+                <h2 className="font-headline-md text-headline-md text-on-background">Danh mục</h2>
                 <p className="font-body-sm text-body-sm text-on-surface-variant">
                   Quản lý danh mục, bao gồm phân cấp cha / con.
                 </p>

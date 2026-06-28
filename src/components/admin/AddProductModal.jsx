@@ -381,7 +381,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
                 <div className="space-y-sm">
                   <img
                     src={imagePreview}
-                    alt="Preview"
+                    alt="Xem trước sản phẩm"
                     className="w-24 h-24 mx-auto object-cover rounded"
                   />
                   <p className="text-label-sm text-on-surface-variant">
@@ -394,7 +394,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
                     cloud_upload
                   </span>
                   <p className="text-label-md text-on-surface">Chọn ảnh hoặc kéo thả</p>
-                  <p className="text-label-sm text-on-surface-variant">JPG, PNG hoặc WebP. Max 2MB</p>
+                  <p className="text-label-sm text-on-surface-variant">JPG, PNG hoặc WebP. Tối đa 2 MB</p>
                 </div>
               )}
             </div>

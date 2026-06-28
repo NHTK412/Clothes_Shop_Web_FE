@@ -233,10 +233,10 @@ const AdminCustomerListPage = () => {
                       className="appearance-none bg-surface-container border-none rounded-lg px-4 py-2 pr-10 text-body-sm font-label-md text-on-surface-variant focus:ring-2 focus:ring-primary"
                     >
                       <option value="all">Cấp bậc thành viên</option>
-                      <option value="diamond">Diamond</option>
-                      <option value="gold">Gold</option>
-                      <option value="silver">Silver</option>
-                      <option value="bronze">Bronze</option>
+                      <option value="diamond">Kim cương</option>
+                      <option value="gold">Vàng</option>
+                      <option value="silver">Bạc</option>
+                      <option value="bronze">Đồng</option>
                     </select>
                     <span className="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 pointer-events-none text-outline">expand_more</span>
                   </div>
@@ -343,7 +343,7 @@ const AdminCustomerListPage = () => {
                           </td>
                           <td className="px-md py-4">
                             <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-label-sm font-medium ${customer.status === 'INACTIVE' ? 'bg-[#fef2f2] text-[#dc2626]' : customer.status === 'ACTIVE' ? 'bg-[#ecfdf5] text-[#059669]' : 'bg-surface-variant text-on-surface-variant'}`}>
-                              {customer.status === 'ACTIVE' ? 'Active' : customer.status === 'INACTIVE' ? 'Inactive' : customer.status ?? '-'}
+                              {customer.status === 'ACTIVE' ? 'Đang hoạt động' : customer.status === 'INACTIVE' ? 'Không hoạt động' : customer.status ?? '-'}
                             </span>
                           </td>
                           <td className="px-md py-4 text-body-md">{customer.total_orders ?? customer.order_count ?? customer.orders_count ?? '-'}</td>

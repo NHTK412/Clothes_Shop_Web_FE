@@ -255,9 +255,9 @@ const AdminProductListPage = () => {
             {/* Page Header */}
             <div className="flex flex-col md:flex-row md:items-end justify-between mb-lg gap-md">
               <div>
-                <h2 className="font-headline-md text-headline-md text-on-background">Products</h2>
+                <h2 className="font-headline-md text-headline-md text-on-background">Sản phẩm</h2>
                 <p className="font-body-sm text-body-sm text-on-surface-variant">
-                  {products.length} items in your catalog
+                  {products.length} sản phẩm trong danh mục
                 </p>
               </div>
               <button
@@ -266,7 +266,7 @@ const AdminProductListPage = () => {
                 className="bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md px-lg py-sm rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-50"
               >
                 <span className="material-symbols-outlined mr-xs text-[20px]">add</span>
-                Add Product
+                Thêm sản phẩm
               </button>
             </div>
 
