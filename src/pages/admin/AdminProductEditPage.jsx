@@ -4,6 +4,13 @@ import { notification } from 'antd';
 import AttributeService from '../../services/AttributeService';
 import ProductsService from '../../services/ProductsService';
 
+const getUploadedImageUrl = (response) =>
+  response?.data?.image_url ??
+  response?.data?.url ??
+  response?.image_url ??
+  response?.url ??
+  null;
+
 const normalizeArray = (payload) => {
   if (Array.isArray(payload)) return payload;
   if (payload == null) return [];
@@ -15,8 +22,8 @@ const normalizeArray = (payload) => {
 
 const getCurrentPrice = (price, discount) => {
   const basePrice = Number(price || 0);
-  const discountAmount = Number(discount || 0);
-  return Math.max(basePrice - discountAmount, 0);
+  const discountPrice = Number(discount || 0);
+  return discountPrice > 0 ? discountPrice : basePrice;
 };
 
 const getAttributeTypeId = (item) => {
@@ -99,8 +106,7 @@ const AdminProductEditPage = () => {
   const [error, setError] = useState(null);
   const [categories, setCategories] = useState([]);
   const [attributeTypes, setAttributeTypes] = useState([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState('');
-  const [status, setStatus] = useState('active');
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [variantRows, setVariantRows] = useState([
     {
       rowId: 'variant-1',
@@ -109,6 +115,9 @@ const AdminProductEditPage = () => {
       stock: '',
       price: '',
       discount_price: '',
+      image: '',
+      imagePreview: '',
+      isUploadingImage: false,
       attributes: {},
     },
   ]);
@@ -140,11 +149,13 @@ const AdminProductEditPage = () => {
           image: productData?.image || '',
         });
 
-        const categoryId = Array.isArray(productData?.categories) && productData.categories.length > 0
-          ? productData.categories[0]?.id ?? productData.categories[0]?._id ?? productData.categories[0]?.categoryId ?? ''
-          : productData?.category?.id ?? productData?.category?._id ?? productData?.category?.categoryId ?? '';
-        setSelectedCategoryId(categoryId ? String(categoryId) : '');
-        setStatus(productData?.status || 'active');
+        const categoryIds = Array.isArray(productData?.categories)
+          ? productData.categories
+              .map((category) => category?.id ?? category?._id ?? category?.categoryId)
+              .filter((categoryId) => categoryId != null)
+              .map(Number)
+          : [];
+        setSelectedCategoryIds(categoryIds);
 
         const categoriesArray = normalizeArray(categoryList);
         setCategories(categoriesArray);
@@ -170,6 +181,9 @@ const AdminProductEditPage = () => {
               stock: variant.stock ?? '',
               price: variant.price ?? '',
               discount_price: variant.discount_price ?? '',
+              image: variant.image ?? '',
+              imagePreview: '',
+              isUploadingImage: false,
               attributes: extractVariantAttributes(variant),
             }))
           : [];
@@ -182,6 +196,9 @@ const AdminProductEditPage = () => {
             stock: '',
             price: '',
             discount_price: '',
+            image: '',
+            imagePreview: '',
+            isUploadingImage: false,
             attributes: {},
           },
         ]);
@@ -213,7 +230,9 @@ const AdminProductEditPage = () => {
   };
 
   const handleCategoryChange = (event) => {
-    setSelectedCategoryId(event.target.value);
+    setSelectedCategoryIds(
+      Array.from(event.target.selectedOptions, (option) => Number(option.value))
+    );
   };
 
   const handleVariantFieldChange = (rowId, field, value) => {
@@ -258,6 +277,9 @@ const AdminProductEditPage = () => {
       stock: '',
       price: '',
       discount_price: '',
+      image: '',
+      imagePreview: '',
+      isUploadingImage: false,
       attributes: {},
     };
     setVariantRows((prev) => [...prev, newRow]);
@@ -267,12 +289,65 @@ const AdminProductEditPage = () => {
     setVariantRows((prev) => prev.filter((row) => row.rowId !== rowId));
   };
 
+  const handleVariantImageChange = async (rowId, file) => {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setVariantRows((prev) =>
+        prev.map((row) =>
+          row.rowId === rowId ? { ...row, imagePreview: reader.result } : row
+        )
+      );
+    };
+    reader.readAsDataURL(file);
+
+    setVariantRows((prev) =>
+      prev.map((row) =>
+        row.rowId === rowId ? { ...row, isUploadingImage: true } : row
+      )
+    );
+    setError(null);
+
+    try {
+      const response = await ProductsService.uploadImage(file);
+      const imageUrl = getUploadedImageUrl(response);
+
+      if (!imageUrl) {
+        throw new Error('API tải ảnh không trả về URL');
+      }
+
+      setVariantRows((prev) =>
+        prev.map((row) =>
+          row.rowId === rowId
+            ? { ...row, image: imageUrl, isUploadingImage: false }
+            : row
+        )
+      );
+    } catch (err) {
+      console.error('Variant image upload failed:', err);
+      setVariantRows((prev) =>
+        prev.map((row) =>
+          row.rowId === rowId
+            ? { ...row, imagePreview: '', isUploadingImage: false }
+            : row
+        )
+      );
+      setError('Không thể tải ảnh biến thể. Ảnh hiện tại hoặc ảnh sản phẩm chính sẽ được giữ lại.');
+    }
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
     setSaving(true);
     setError(null);
 
     try {
+      if (variantRows.some((row) => row.isUploadingImage)) {
+        setError('Vui lòng chờ ảnh biến thể tải lên hoàn tất.');
+        return;
+      }
+
       const variants = variantRows
         .map((row) => {
           const attributeValueIds = Object.values(row.attributes).filter(Boolean);
@@ -290,6 +365,7 @@ const AdminProductEditPage = () => {
                 : formData.discount_price !== ''
                 ? Number(formData.discount_price)
                 : null,
+            image: row.image || formData.image || null,
             attribute_value_ids: attributeValueIds.map((valueId) => Number(valueId)),
           };
         })
@@ -301,8 +377,7 @@ const AdminProductEditPage = () => {
         price: Number(formData.price),
         discount_price: formData.discount_price !== '' ? Number(formData.discount_price) : null,
         image: formData.image || null,
-        status,
-        categories: selectedCategoryId ? [Number(selectedCategoryId)] : [],
+        categories: selectedCategoryIds,
         variants,
       });
       notification.success({
@@ -397,7 +472,7 @@ const AdminProductEditPage = () => {
                   />
                 </label>
                 <label className="space-y-2">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Giảm giá</span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">Giá khuyến mãi</span>
                   <input
                     type="number"
                     value={formData.discount_price}
@@ -413,7 +488,7 @@ const AdminProductEditPage = () => {
                     <p className="font-body-sm text-body-sm text-on-surface">{Number(formData.price || 0).toLocaleString('vi-VN')}₫</p>
                   </div>
                   <div>
-                    <p className="font-label-xs text-xs text-on-surface-variant">Giảm giá</p>
+                    <p className="font-label-xs text-xs text-on-surface-variant">Giá khuyến mãi</p>
                     <p className="font-body-sm text-body-sm text-on-surface">{formData.discount_price !== '' ? Number(formData.discount_price).toLocaleString('vi-VN') + '₫' : '0₫'}</p>
                   </div>
                   <div>
@@ -430,20 +505,20 @@ const AdminProductEditPage = () => {
                 <label className="space-y-2">
                   <span className="font-label-md text-label-sm text-on-surface-variant">Danh mục</span>
                   <select
-                    value={selectedCategoryId}
+                    multiple
+                    value={selectedCategoryIds.map(String)}
                     onChange={handleCategoryChange}
-                    className="w-full rounded-xl border border-outline px-md py-sm bg-surface text-on-surface"
-                    required
+                    className="w-full min-h-28 rounded-xl border border-outline px-md py-sm bg-surface text-on-surface"
                   >
-                    <option value="" disabled>
-                      Chọn danh mục
-                    </option>
                     {categories.map((category) => (
                       <option key={category.id ?? category._id ?? category.category_id} value={category.id ?? category._id ?? category.category_id}>
                         {category.name ?? category.title ?? 'Danh mục'}
                       </option>
                     ))}
                   </select>
+                  <span className="block text-xs text-on-surface-variant">
+                    Giữ Ctrl (Windows) hoặc Command (macOS) để chọn nhiều danh mục.
+                  </span>
                 </label>
               </div>
 
@@ -486,16 +561,50 @@ const AdminProductEditPage = () => {
                           />
                         </label>
                         <label className="space-y-2">
-                          <span className="font-label-sm text-label-sm text-on-surface-variant">Giảm giá biến thể</span>
+                          <span className="font-label-sm text-label-sm text-on-surface-variant">Giá khuyến mãi biến thể</span>
                           <input
                             type="number"
                             value={row.discount_price}
                             onChange={(e) => handleVariantFieldChange(row.rowId, 'discount_price', e.target.value)}
-                            placeholder="Để trống dùng giảm giá chung"
+                            placeholder="Để trống dùng giá khuyến mãi chung"
                             className="w-full rounded-3xl border border-outline px-md py-sm bg-surface text-on-surface"
                           />
                         </label>
                       </div>
+                      <label className="space-y-2">
+                        <span className="font-label-sm text-label-sm text-on-surface-variant">
+                          Ảnh biến thể (tùy chọn)
+                        </span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          disabled={row.isUploadingImage || saving}
+                          onChange={(event) => handleVariantImageChange(row.rowId, event.target.files?.[0])}
+                          className="block w-full rounded-xl border border-outline bg-surface px-md py-sm text-body-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary-container file:px-3 file:py-1 file:text-primary disabled:opacity-50"
+                        />
+                        <div className="flex items-center gap-3 rounded-xl bg-surface-container-low p-3">
+                          {(row.imagePreview || row.image || formData.image) ? (
+                            <img
+                              src={row.imagePreview || row.image || formData.image}
+                              alt={`Ảnh của biến thể ${row.sku || row.rowId}`}
+                              className="h-16 w-16 rounded-lg object-cover"
+                            />
+                          ) : (
+                            <div className="flex h-16 w-16 items-center justify-center rounded-lg bg-surface-container text-on-surface-variant">
+                              <span className="material-symbols-outlined">image</span>
+                            </div>
+                          )}
+                          <p className="text-sm text-on-surface-variant">
+                            {row.isUploadingImage
+                              ? 'Đang tải ảnh biến thể...'
+                              : row.image
+                                ? 'Đang sử dụng ảnh riêng của biến thể'
+                                : formData.image
+                                  ? 'Đang sử dụng ảnh sản phẩm chính'
+                                  : 'Chưa có ảnh cho biến thể'}
+                          </p>
+                        </div>
+                      </label>
                       <div className="grid gap-lg lg:grid-cols-[minmax(0,1fr)_auto] items-end">
                         <div className="grid gap-sm sm:grid-cols-2 lg:grid-cols-2">
                           {attributeTypes.map((attrType) => (

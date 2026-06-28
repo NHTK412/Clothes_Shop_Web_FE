@@ -3,6 +3,13 @@ import { notification } from 'antd';
 import AttributeService from '../../services/AttributeService';
 import ProductsService from '../../services/ProductsService';
 
+const getUploadedImageUrl = (response) =>
+  response?.data?.image_url ??
+  response?.data?.url ??
+  response?.image_url ??
+  response?.url ??
+  null;
+
 const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
   const [formData, setFormData] = useState({
     name: '',
@@ -10,7 +17,6 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
     price: '',
     discount_price: '',
     image: null,
-    attribute_value_ids: [],
   });
 
   const [imagePreview, setImagePreview] = useState(null);
@@ -21,7 +27,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
   const [successMessage, setSuccessMessage] = useState(null);
   const [attributeTypes, setAttributeTypes] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [selectedCategoryId, setSelectedCategoryId] = useState('');
+  const [selectedCategoryIds, setSelectedCategoryIds] = useState([]);
   const [variantDraft, setVariantDraft] = useState({
     attributes: {},
     stock: '',
@@ -145,7 +151,10 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
       stock: String(stockValue),
       price: variantDraft.price,
       discount_price: variantDraft.discount_price,
-      sku: buildVariantSku(formData.name, { attributes: { ...variantDraft.attributes } }),
+      image: '',
+      imagePreview: '',
+      isUploadingImage: false,
+      sku: buildVariantSku(formData.name, { id, attributes: { ...variantDraft.attributes } }),
     };
 
     setVariantRows((prev) => [...prev, newRow]);
@@ -155,6 +164,54 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
 
   const removeVariantRow = (rowId) => {
     setVariantRows((prev) => prev.filter((row) => row.id !== rowId));
+  };
+
+  const handleVariantImageChange = async (rowId, file) => {
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      setVariantRows((prev) =>
+        prev.map((row) =>
+          row.id === rowId ? { ...row, imagePreview: reader.result } : row
+        )
+      );
+    };
+    reader.readAsDataURL(file);
+
+    setVariantRows((prev) =>
+      prev.map((row) =>
+        row.id === rowId ? { ...row, isUploadingImage: true } : row
+      )
+    );
+    setError(null);
+
+    try {
+      const response = await ProductsService.uploadImage(file);
+      const imageUrl = getUploadedImageUrl(response);
+
+      if (!imageUrl) {
+        throw new Error('API tải ảnh không trả về URL');
+      }
+
+      setVariantRows((prev) =>
+        prev.map((row) =>
+          row.id === rowId
+            ? { ...row, image: imageUrl, isUploadingImage: false }
+            : row
+        )
+      );
+    } catch (err) {
+      console.error('Error uploading variant image:', err);
+      setVariantRows((prev) =>
+        prev.map((row) =>
+          row.id === rowId
+            ? { ...row, image: '', imagePreview: '', isUploadingImage: false }
+            : row
+        )
+      );
+      setError('Không thể tải ảnh biến thể. Biến thể này sẽ sử dụng ảnh sản phẩm chính.');
+    }
   };
 
   const buildVariantSku = (productName, row) => {
@@ -200,11 +257,12 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
       setError(null);
       try {
         const response = await ProductsService.uploadImage(file);
-        if (response.success) {
-          setUploadedImageUrl(response.data.image_url);
+        const imageUrl = getUploadedImageUrl(response);
+        if (imageUrl) {
+          setUploadedImageUrl(imageUrl);
           setFormData((prev) => ({
             ...prev,
-            image: response.data.image_url,
+            image: imageUrl,
           }));
           setSuccessMessage('Ảnh được tải lên thành công!');
           setTimeout(() => setSuccessMessage(null), 3000);
@@ -238,7 +296,9 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
   };
 
   const handleCategoryChange = (e) => {
-    setSelectedCategoryId(e.target.value);
+    setSelectedCategoryIds(
+      Array.from(e.target.selectedOptions, (option) => Number(option.value))
+    );
   };
 
   const handleSubmit = async (e) => {
@@ -253,19 +313,32 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
     setError(null);
 
     try {
+      if (variantRows.some((row) => row.isUploadingImage)) {
+        setError('Vui lòng chờ ảnh biến thể tải lên hoàn tất.');
+        return;
+      }
+
+      const rawImageValue = uploadedImageUrl || formData.image;
+      const imageValue = rawImageValue && !String(rawImageValue).startsWith('data:')
+        ? rawImageValue
+        : null;
+
       const variants = variantRows
         .map((row) => {
-          const attributeValueIds = Object.values(row.attributes).filter(Boolean);
+          const attributeValueIds = Object.values(row.attributes)
+            .filter(Boolean)
+            .map(Number);
           if (attributeValueIds.length === 0 && row.stock === '') {
             return null;
           }
           return {
             sku: buildVariantSku(formData.name, row),
-            stock: row.stock ? parseInt(row.stock, 10) : 0,
             price: row.price !== '' ? Number(row.price) : Number(formData.price),
             discount_price: row.discount_price !== ''
               ? Number(row.discount_price)
               : (formData.discount_price ? Number(formData.discount_price) : null),
+            stock: row.stock ? parseInt(row.stock, 10) : 0,
+            image: row.image || imageValue,
             attribute_value_ids: attributeValueIds,
           };
         })
@@ -276,15 +349,10 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
         description: formData.description || null,
         price: parseFloat(formData.price),
         discount_price: formData.discount_price ? parseFloat(formData.discount_price) : null,
-        categories: selectedCategoryId ? [Number(selectedCategoryId)] : null,
-        variants: variants.length > 0 ? variants : null,
+        image: imageValue,
+        categories: selectedCategoryIds,
+        variants,
       };
-
-      const rawImageValue = uploadedImageUrl || formData.image;
-      const imageValue = rawImageValue && !String(rawImageValue).startsWith('data:') ? rawImageValue : null;
-      if (imageValue) {
-        productData.image = imageValue;
-      }
 
       console.log("[AddProductModal] Creating product with data:", productData);
 
@@ -322,13 +390,12 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
       price: '',
       discount_price: '',
       image: null,
-      attribute_value_ids: [],
     });
     setImagePreview(null);
     setUploadedImageUrl(null);
     setError(null);
     setSuccessMessage(null);
-    setSelectedCategoryId('');
+    setSelectedCategoryIds([]);
     setVariantDraft({ attributes: {}, stock: '', price: '', discount_price: '' });
     nextVariantId.current = 1;
     setVariantRows([]);
@@ -466,7 +533,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
             </div>
             <div className="space-y-sm">
               <label className="font-label-md text-label-md text-on-surface">
-                Giảm giá
+                Giá khuyến mãi
               </label>
               <input
                 type="number"
@@ -484,11 +551,11 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
           <div className="space-y-sm">
             <label className="font-label-md text-label-md text-on-surface">Danh mục</label>
             <select
-              value={selectedCategoryId}
+              multiple
+              value={selectedCategoryIds.map(String)}
               onChange={handleCategoryChange}
-              className="w-full px-sm py-2 border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-body-sm"
+              className="w-full min-h-28 px-sm py-2 border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-body-sm"
             >
-              <option value="">-- Chọn danh mục --</option>
               {categories.map((category) => {
                 const categoryId = category.id ?? category._id ?? category.categoryId ?? category.id;
                 const categoryLabel = category.name ?? category.title ?? category.slug ?? `#${categoryId}`;
@@ -499,6 +566,9 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
                 );
               })}
             </select>
+            <p className="text-label-sm text-on-surface-variant">
+              Giữ Ctrl (Windows) hoặc Command (macOS) để chọn nhiều danh mục.
+            </p>
           </div>
 
           <div className="border border-outline-variant rounded-xl p-md space-y-sm">
@@ -576,14 +646,14 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
                   />
                 </label>
                 <label className="space-y-2 xl:col-span-1">
-                  <span className="font-label-sm text-label-sm text-on-surface-variant">Giảm giá</span>
+                  <span className="font-label-sm text-label-sm text-on-surface-variant">Giá khuyến mãi</span>
                   <input
                     type="number"
                     min="0"
                     step="0.01"
                     value={variantDraft.discount_price}
                     onChange={(e) => setVariantDraft((prev) => ({ ...prev, discount_price: e.target.value }))}
-                    placeholder="0"
+                    placeholder="Để trống dùng giá khuyến mãi chung"
                     className="w-full px-sm py-2 border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-body-sm"
                   />
                 </label>
@@ -655,16 +725,50 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
                       />
                     </label>
                     <label className="space-y-2">
-                      <span className="font-label-sm text-label-sm text-on-surface-variant">Giảm giá</span>
+                      <span className="font-label-sm text-label-sm text-on-surface-variant">Giá khuyến mãi</span>
                       <input
                         type="number"
                         min="0"
                         step="0.01"
                         value={row.discount_price || ''}
                         onChange={(e) => handleVariantRowChange(row.id, 'discount_price', e.target.value)}
-                        placeholder="0"
+                        placeholder="Để trống dùng giá khuyến mãi chung"
                         className="w-full px-sm py-2 border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-body-sm"
                       />
+                    </label>
+                    <label className="space-y-2 md:col-span-2 xl:col-span-3">
+                      <span className="font-label-sm text-label-sm text-on-surface-variant">
+                        Ảnh biến thể (tùy chọn)
+                      </span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        disabled={row.isUploadingImage || isLoading}
+                        onChange={(e) => handleVariantImageChange(row.id, e.target.files?.[0])}
+                        className="block w-full rounded-lg border border-outline-variant bg-white px-sm py-2 text-body-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary-container file:px-3 file:py-1 file:text-primary disabled:opacity-50"
+                      />
+                      <div className="flex items-center gap-3 rounded-lg bg-surface-container-low p-2">
+                        {(row.imagePreview || row.image || imagePreview) ? (
+                          <img
+                            src={row.imagePreview || row.image || imagePreview}
+                            alt={`Xem trước ảnh biến thể ${rowIndex + 1}`}
+                            className="h-14 w-14 rounded-md object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-14 w-14 items-center justify-center rounded-md bg-surface-container text-on-surface-variant">
+                            <span className="material-symbols-outlined">image</span>
+                          </div>
+                        )}
+                        <p className="text-label-sm text-on-surface-variant">
+                          {row.isUploadingImage
+                            ? 'Đang tải ảnh biến thể...'
+                            : row.image
+                              ? 'Đã dùng ảnh riêng cho biến thể'
+                              : imagePreview
+                                ? 'Chưa chọn ảnh riêng — đang dùng ảnh sản phẩm chính'
+                                : 'Chưa có ảnh sản phẩm chính hoặc ảnh biến thể'}
+                        </p>
+                      </div>
                     </label>
                   </div>
                 </div>

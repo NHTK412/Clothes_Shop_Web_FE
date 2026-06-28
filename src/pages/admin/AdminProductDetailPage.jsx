@@ -11,8 +11,8 @@ const formatCurrency = (value) => {
 
 const getCurrentPrice = (price, discount) => {
   const basePrice = Number(price || 0);
-  const discountAmount = Number(discount || 0);
-  return Math.max(basePrice - discountAmount, 0);
+  const discountPrice = Number(discount || 0);
+  return discountPrice > 0 ? discountPrice : basePrice;
 };
 
 
@@ -29,7 +29,7 @@ const AdminProductDetailPage = () => {
     const values = variant.attribute_values ?? variant.attributeValues ?? variant.attributes ?? [];
     if (Array.isArray(values)) {
       return values
-        .map((item) => item?.value ?? item?.name ?? item?.label ?? item?.display_name ?? item?.displayValue ?? '')
+        .map((item) => item?.display_value ?? item?.displayValue ?? item?.display_name ?? item?.value ?? item?.name ?? item?.label ?? '')
         .filter(Boolean)
         .join(', ') || '-';
     }
@@ -202,7 +202,7 @@ const AdminProductDetailPage = () => {
                             <p className="font-body-sm text-body-sm text-on-surface font-semibold mt-2">{formatCurrency(product.price)}</p>
                           </div>
                           <div className="rounded-2xl bg-surface-container-lowest p-4 text-center sm:col-span-1 lg:col-span-2">
-                            <p className="font-label-xs text-xs text-on-surface-variant">Giảm giá</p>
+                            <p className="font-label-xs text-xs text-on-surface-variant">Giá khuyến mãi</p>
                             <p className="font-body-sm text-body-sm text-red-700 font-semibold mt-2 ">{product.discount_price ? formatCurrency(product.discount_price) : '0₫'}</p>
                           </div>
                         </div>
@@ -224,10 +224,11 @@ const AdminProductDetailPage = () => {
                       <table className="w-full text-left border-collapse">
                         <thead>
                           <tr className="border-b border-outline-variant bg-surface-container-low">
+                            <th className="px-md py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Ảnh</th>
                             <th className="px-md py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">SKU</th>
                             <th className="px-md py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Biến thể</th>
                             <th className="px-md py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Giá gốc</th>
-                            <th className="px-md py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Giảm giá</th>
+                            <th className="px-md py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Giá khuyến mãi</th>
                             <th className="px-md py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Giá bán</th>
                             <th className="px-md py-3 font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Số lượng</th>
                           </tr>
@@ -238,6 +239,13 @@ const AdminProductDetailPage = () => {
                             const variantDiscount = getVariantDiscount(variant);
                             return (
                               <tr key={variant.id ?? variant.sku ?? variant.rowId} className="border-b border-outline-variant last:border-b-0">
+                                <td className="px-md py-3">
+                                  <img
+                                    src={variant.image || product.image}
+                                    alt={`Ảnh biến thể ${formatVariantAttributes(variant)}`}
+                                    className="h-14 w-14 rounded-lg border border-outline-variant object-cover"
+                                  />
+                                </td>
                                 <td className="px-md py-3 font-body-sm text-body-sm text-on-surface">{variant.sku}</td>
                                 <td className="px-md py-3 font-body-sm text-body-sm text-on-surface">{formatVariantAttributes(variant)}</td>
                                 <td className="px-md py-3 font-body-sm text-body-sm text-on-surface">{formatCurrency(variantPrice)}</td>
