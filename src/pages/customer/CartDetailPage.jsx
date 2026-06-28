@@ -1,19 +1,29 @@
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import CartService from "../../services/CartService";
-
-const shippingFee = 35000;
-const discountRate = 0.1;
-
-const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")}₫`;
+import AddressService from "../../services/AddressService";
+import AddressSelectionModal from "../../components/client/AddressSelectionModal";
+import { notification } from "antd";
+import VoucherService from "../../services/VoucherService";
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
 
 const getAttributeDisplay = (attributes = [], type) => (
     attributes.find((attribute) => attribute.type === type)?.display_value || ""
 );
 
+const formatAddress = (address) => (
+    [
+        address?.specific_address,
+        address?.ward_name,
+        address?.district_name,
+        address?.province_name,
+    ].filter(Boolean).join(", ")
+);
+
 const normalizeCartItem = (item) => {
-    const price = Number(item.discount_price ?? item.original_price ?? 0);
-    const originalPrice = Number(item.original_price ?? price);
+    const originalPrice = Number(item.price ?? item.unit_price ?? item.original_price ?? 0);
+    const discountAmount = Number(item.discount_price ?? item.unit_discount_price ?? 0);
+    const price = Math.max(originalPrice - discountAmount, 0);
 
     return {
         id: item.cart_item_id,
@@ -24,16 +34,29 @@ const normalizeCartItem = (item) => {
         material: getAttributeDisplay(item.attributes, "material"),
         price,
         originalPrice,
+        discountAmount,
         quantity: Number(item.quantity) || 1,
         image: item.image,
     };
 };
 
 const CartDetailPage = () => {
+    const navigate = useNavigate();
     const [cartItems, setCartItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [updatingItemId, setUpdatingItemId] = useState(null);
+    const [addressModalOpen, setAddressModalOpen] = useState(false);
+    const [selectedAddress, setSelectedAddress] = useState(null);
+    const [shippingFee, setShippingFee] = useState(0);
+    const [shippingFeeLoading, setShippingFeeLoading] = useState(false);
+    const [shippingFeeError, setShippingFeeError] = useState("");
+
+    const [voucherCode, setVoucherCode] = useState("");
+    const [voucherApplied, setVoucherApplied] = useState("");
+    const [discount, setDiscount] = useState(0);
+    const [shippingDiscount, setShippingDiscount] = useState(0);
+
 
     useEffect(() => {
         let mounted = true;
@@ -55,7 +78,27 @@ const CartDetailPage = () => {
             }
         };
 
+        const fetchAddressDefault = async () => {
+            setShippingFeeLoading(true);
+            try {
+                const items = await AddressService.getAddresses();
+
+                const defaultAddress = (items || []).find((address) => address.is_default);
+                if (defaultAddress && mounted) {
+                    setSelectedAddress(defaultAddress);
+                }
+            } catch (e) {
+                if (!mounted) return;
+                setError(e?.response?.data?.message || "Không thể tải giỏ hàng. Vui lòng thử lại sau.");
+                setCartItems([]);
+            }
+            finally {
+                if (mounted) setShippingFeeLoading(false);
+            }
+        }
+
         fetchCartItems();
+        fetchAddressDefault();
 
         return () => {
             mounted = false;
@@ -66,8 +109,52 @@ const CartDetailPage = () => {
         () => cartItems.reduce((total, item) => total + item.price * item.quantity, 0),
         [cartItems]
     );
-    const discount = Math.round(subtotal * discountRate);
-    const total = Math.max(subtotal + shippingFee - discount, 0);
+    // const discount = 0;
+    const total = Math.max(subtotal + shippingFee - discount - shippingDiscount, 0);
+
+    useEffect(() => {
+        let mounted = true;
+
+        const fetchShippingFee = async () => {
+            if (!selectedAddress || cartItems.length === 0) {
+                setShippingFee(0);
+                setShippingFeeError("");
+                return;
+            }
+
+            setShippingFeeLoading(true);
+            setShippingFeeError("");
+
+            try {
+                const wardIdV2 = selectedAddress.ward_code;
+                const districtId = selectedAddress.district_id ?? selectedAddress.province_id;
+
+                if (!wardIdV2 || !districtId) {
+                    throw new Error("Thiếu thông tin phường/xã hoặc khu vực giao hàng để tính phí vận chuyển.");
+                }
+
+                const fee = await AddressService.getShippingFee(
+                    wardIdV2,
+                    districtId
+                );
+
+                if (!mounted) return;
+                setShippingFee(fee);
+            } catch (e) {
+                if (!mounted) return;
+                setShippingFee(0);
+                setShippingFeeError(e?.response?.data?.message || e?.message || "Không thể tính phí vận chuyển.");
+            } finally {
+                if (mounted) setShippingFeeLoading(false);
+            }
+        };
+
+        fetchShippingFee();
+
+        return () => {
+            mounted = false;
+        };
+    }, [cartItems.length, selectedAddress]);
 
     const updateQuantity = async (itemId, nextQuantity) => {
         setUpdatingItemId(itemId);
@@ -88,6 +175,87 @@ const CartDetailPage = () => {
         updateQuantity(itemId, 0);
     };
 
+    const handleCheckout = () => {
+        navigate("/checkout", {
+            state: {
+                cartItems,
+                selectedAddress,
+                subtotal,
+                shippingFee,
+                voucherCode: voucherApplied,
+                discount,
+                shippingDiscount,
+                total,
+            },
+        });
+    };
+
+    const handleAddVoucher = (async () => {
+        try {
+            const voucher = await VoucherService.getVoucherByCode(voucherCode);
+            // Handle the voucher logic here
+
+            if (voucher) {
+                setVoucherApplied(voucher.code);
+                switch (voucher.discount_type) {
+                    case "ORDER": {
+                        const discountValue = voucher?.max_discount_amount ?
+                            Math.min(Number(voucher?.discount_amount) / 100 * subtotal, Number(voucher?.max_discount_amount))
+                            :
+                            Number(voucher?.discount_amount) / 100 * subtotal;
+                        setShippingDiscount(0);
+                        setDiscount(discountValue);
+                        break;
+                    }
+                    case "SHIPPING": {
+                        // const shippingDiscountValue = Math.min(Number(voucher?.discount_amount) / 100 * shippingFee, Number(voucher?.max_discount_amount));
+                        const shippingDiscountValue = voucher?.max_discount_amount ?
+                            Math.min(Number(voucher?.discount_amount) / 100 * shippingFee, Number(voucher?.max_discount_amount))
+                            :
+                            Number(voucher?.discount_amount) / 100 * shippingFee;
+                        setDiscount(0);
+                        setShippingDiscount(shippingDiscountValue);
+                        break;
+                    }
+                    default:
+                        notification.error({
+                            message: "Lỗi",
+                            description: "Loại giảm giá không hợp lệ.",
+                        });
+                        break;
+                }
+            }
+            setVoucherCode("");
+
+            //             {
+            //   "status": 200,
+            //   "success": true,
+            //   "message": null,
+            //   "data": {
+            //     "id": 1,
+            //     "code": "GIAM50",
+            //     "description": "Nhân kịp khai trương giảm giá 50% cho giá trị đơn hàng",
+            //     "discount_amount": "50.00",
+            //     "max_discount_amount": "2000000.00",
+            //     "discount_type": "ORDER",
+            //     "is_active": 1,
+            //     "usage_limit": 100,
+            //     "expiry_date": "2026-06-30",
+            //     "created_at": null,
+            //     "updated_at": null
+            //   }
+            // }
+
+        } catch (error) {
+            console.error("Error applying voucher:", error);
+            notification.error({
+                message: "Lỗi",
+                description: "Không thể áp dụng mã giảm giá. Vui lòng thử lại sau.",
+            });
+        }
+    });
+
+
     return (
         <main className="max-w-max-width mx-auto px-margin-mobile md:px-lg py-xl">
             <h1 className="font-display-lg text-display-lg-mobile md:text-display-lg mb-xl text-primary">
@@ -95,7 +263,7 @@ const CartDetailPage = () => {
             </h1>
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-gutter">
-                <section className="lg:col-span-8 flex flex-col gap-md">
+                <section className="lg:col-span-7 flex flex-col gap-md">
                     {loading ? (
                         <div className="bg-surface-container-lowest border border-outline-variant p-lg text-center">
                             <span className="material-symbols-outlined text-5xl text-primary animate-pulse">shopping_cart</span>
@@ -200,11 +368,39 @@ const CartDetailPage = () => {
                     </div>
                 </section>
 
-                <aside className="lg:col-span-4">
+                <aside className="lg:col-span-5">
                     <div className="bg-surface-container-lowest border border-outline-variant p-md sticky top-24">
                         <h2 className="font-headline-md text-headline-md text-on-surface mb-md">
                             Tóm tắt đơn hàng
                         </h2>
+
+                        <div className="mb-md border border-outline-variant bg-surface p-sm">
+                            <div className="mb-xs flex items-center justify-between gap-sm">
+                                <div className="flex items-center gap-xs text-on-surface">
+                                    <span className="material-symbols-outlined text-primary">location_on</span>
+                                    <span className="font-label-md text-label-md">Địa chỉ giao hàng</span>
+                                </div>
+                                <button
+                                    className="text-label-sm text-primary hover:underline disabled:opacity-60"
+                                    disabled={cartItems.length === 0}
+                                    type="button"
+                                    onClick={() => setAddressModalOpen(true)}>
+                                    {selectedAddress ? "Thay đổi" : "Chọn địa chỉ"}
+                                </button>
+                            </div>
+                            {selectedAddress ? (
+                                <div className="text-body-sm text-secondary">
+                                    <p className="font-label-md text-on-surface">
+                                        {selectedAddress.full_name} - {selectedAddress.phone}
+                                    </p>
+                                    <p className="mt-1">{formatAddress(selectedAddress)}</p>
+                                </div>
+                            ) : (
+                                <p className="text-body-sm text-secondary">
+                                    Chọn địa chỉ để chuẩn bị tính phí giao hàng tự động.
+                                </p>
+                            )}
+                        </div>
 
                         <div className="flex flex-col gap-sm border-b border-outline-variant pb-md mb-md">
                             <div className="flex justify-between text-secondary font-body-md">
@@ -213,60 +409,85 @@ const CartDetailPage = () => {
                             </div>
                             <div className="flex justify-between text-secondary font-body-md">
                                 <span>Phí vận chuyển</span>
-                                <span>{formatCurrency(cartItems.length > 0 ? shippingFee : 0)}</span>
+                                <span>
+                                    {shippingFeeLoading ? "Đang tính..." : formatCurrency(cartItems.length > 0 ? shippingFee : 0)}
+                                </span>
                             </div>
-                            <div className="flex justify-between text-error font-label-sm">
-                                <span>Mã giảm giá (LUXE10)</span>
-                                <span>-{formatCurrency(discount)}</span>
+                            {shippingFeeError && (
+                                <p className="text-body-sm text-error">{shippingFeeError}</p>
+                            )}
+                            { voucherApplied && discount > 0 && (
+                                <div className="flex justify-between text-error font-label-sm">
+                                    <span>Mã giảm giá ({voucherApplied})</span>
+                                    <span>-{formatCurrency(discount)}</span>
+                                </div>
+                            )}
+                            {voucherApplied && shippingDiscount > 0 && (
+                                <div className="flex justify-between text-error font-label-sm">
+                                    <span>Giảm phí vận chuyển ({voucherApplied})</span>
+                                    <span>-{formatCurrency(shippingDiscount)}</span>
+                                </div>
+                            )}
+
+                            <div className="flex justify-between items-center mb-lg">
+                                <span className="font-headline-sm text-on-surface">Tổng cộng</span>
+                                <span className="font-headline-md text-primary">
+                                    {formatCurrency(cartItems.length > 0 ? total : 0)}
+                                </span>
                             </div>
-                        </div>
 
-                        <div className="flex justify-between items-center mb-lg">
-                            <span className="font-headline-sm text-on-surface">Tổng cộng</span>
-                            <span className="font-headline-md text-primary">
-                                {formatCurrency(cartItems.length > 0 ? total : 0)}
-                            </span>
-                        </div>
-
-                        <div className="mb-lg">
-                            <label className="block text-label-sm text-secondary mb-xs uppercase tracking-wider">
-                                Mã giảm giá
-                            </label>
-                            <div className="flex gap-xs">
-                                <input
-                                    className="flex-grow bg-surface border border-outline-variant p-sm text-body-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
-                                    placeholder="Nhập mã..."
-                                    type="text"
-                                />
-                                <button
-                                    className="bg-secondary-container text-primary font-label-md px-md py-sm hover:bg-secondary-fixed transition-colors"
-                                    type="button">
-                                    Áp dụng
-                                </button>
+                            {/* {discount > 0 && ( */}
+                            <div className="mb-lg">
+                                <label className="block text-label-sm text-secondary mb-xs uppercase tracking-wider">
+                                    Mã giảm giá
+                                </label>
+                                <div className="flex gap-xs">
+                                    <input
+                                        className="flex-grow bg-surface border border-outline-variant p-sm text-body-sm focus:border-primary focus:ring-1 focus:ring-primary outline-none"
+                                        placeholder="Nhập mã..."
+                                        type="text"
+                                        value={voucherCode}
+                                        onChange={(e) => setVoucherCode(e.target.value)}
+                                    />
+                                    <button
+                                        className="bg-secondary-container text-primary font-label-md px-md py-sm hover:bg-secondary-fixed transition-colors"
+                                        type="button" onClick={handleAddVoucher}>
+                                        Áp dụng
+                                    </button>
+                                </div>
                             </div>
-                        </div>
+                            {/* )} */}
 
-                        <button
-                            className="w-full bg-primary text-on-primary font-label-md py-md shadow-sm hover:bg-on-primary-fixed-variant transition-all active:scale-[0.98] flex items-center justify-center gap-sm disabled:opacity-60 disabled:cursor-not-allowed"
-                            disabled={cartItems.length === 0}
-                            type="button">
-                            <span>Tiến hành thanh toán</span>
-                            <span className="material-symbols-outlined">arrow_forward</span>
-                        </button>
+                            <button
+                                className="w-full bg-primary text-on-primary font-label-md py-md shadow-sm hover:bg-on-primary-fixed-variant transition-all active:scale-[0.98] flex items-center justify-center gap-sm disabled:opacity-60 disabled:cursor-not-allowed"
+                                disabled={cartItems.length === 0 || shippingFeeLoading || !selectedAddress}
+                                type="button"
+                                onClick={handleCheckout}>
+                                <span>Tiến hành thanh toán</span>
+                                <span className="material-symbols-outlined">arrow_forward</span>
+                            </button>
 
-                        <div className="mt-md flex flex-col gap-sm">
-                            <div className="flex items-center gap-xs text-secondary text-body-sm">
-                                <span className="material-symbols-outlined text-sm">verified_user</span>
-                                Thanh toán an toàn 100%
-                            </div>
-                            <div className="flex items-center gap-xs text-secondary text-body-sm">
-                                <span className="material-symbols-outlined text-sm">local_shipping</span>
-                                Giao hàng miễn phí cho đơn từ 2tr
+                            <div className="mt-md flex flex-col gap-sm">
+                                <div className="flex items-center gap-xs text-secondary text-body-sm">
+                                    <span className="material-symbols-outlined text-sm">verified_user</span>
+                                    Thanh toán an toàn 100%
+                                </div>
+                                <div className="flex items-center gap-xs text-secondary text-body-sm">
+                                    <span className="material-symbols-outlined text-sm">local_shipping</span>
+                                    Giao hàng miễn phí cho đơn từ 2tr
+                                </div>
                             </div>
                         </div>
                     </div>
                 </aside>
             </div>
+
+            <AddressSelectionModal
+                open={addressModalOpen}
+                selectedAddressId={selectedAddress?.id}
+                onClose={() => setAddressModalOpen(false)}
+                onSelect={setSelectedAddress}
+            />
         </main>
     );
 };

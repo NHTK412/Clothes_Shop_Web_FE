@@ -3,9 +3,11 @@ import { EyeInvisibleOutlined, EyeOutlined, LoadingOutlined } from "@ant-design/
 import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../../services/AuthService";
+import { login, oauthLogin } from "../../services/AuthService";
 import { Button, notification, Spin } from "antd";
 import Cookies from "js-cookie";
+import { auth, googleProvider } from "../../configs/FirebaseConfig";
+import { signInWithPopup } from 'firebase/auth';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -14,6 +16,40 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    const handleGoogleLogin = async () => {
+        try {
+            const result = await signInWithPopup(auth, googleProvider);
+
+            console.log("Google login result:", result);
+            console.log("Email:", result.user.email);
+            console.log("UID: ", result.user.uid);
+            console.log("displayName: ", result.user.displayName);
+
+            const oauthData = {
+                email: result.user.email,
+                uid: result.user.uid,
+                name: result.user.displayName,
+                provider: "GOOGLE"
+            };
+
+            const response = await oauthLogin(oauthData);
+            notification.success({
+                title: "Đăng nhập thành công",
+                description: "Bạn đã đăng nhập thành công. Chuyển hướng đến trang chủ...",
+            })
+
+            Cookies.set("access_token", response.access_token, {
+                expires: response.expires_in / (60 * 60 * 24)
+            });
+
+            navigate('/');
+        }
+        catch (error) {
+            console.error("Google login error:", error);
+        }
+    }
+
     const handleSubmit = async (e) => {
         try {
             e.preventDefault();
@@ -87,6 +123,7 @@ const LoginPage = () => {
                 </div>
                 <div className="grid grid-cols-1 gap-sm mb-lg">
                     <button
+                        onClick={handleGoogleLogin}
                         className="flex items-center justify-center gap-xs py-sm border border-outline-variant rounded-lg hover:bg-surface-container-low hover:cursor-pointer transition-colors duration-200 group">
                         <Icon icon="logos:google-icon" width="20" height="20" />
                         <span className="font-label-md text-label-md text-on-surface">Google</span>

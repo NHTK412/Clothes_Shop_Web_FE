@@ -4,15 +4,78 @@ import api from "../configs/AxiosConfig";
 const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000/api").replace(/\/api\/?$/, "");
 
 const fallbackCategories = [
-  { id: 1, name: "Thời trang Nữ", image: "https://picsum.photos/seed/cat-1/1200/800" },
-  { id: 2, name: "Thời trang Nam", image: "https://picsum.photos/seed/cat-2/1200/800" },
-  { id: 3, name: "Phụ kiện", image: "https://picsum.photos/seed/cat-3/1200/800" },
+  { id: 1, name: "Thá»i trang Ná»¯", image: "https://picsum.photos/seed/cat-1/1200/800" },
+  { id: 2, name: "Thá»i trang Nam", image: "https://picsum.photos/seed/cat-2/1200/800" },
+  { id: 3, name: "Phá»¥ kiá»‡n", image: "https://picsum.photos/seed/cat-3/1200/800" },
 ];
 
 const fallbackProducts = [
-  { id: 1, name: "Sản phẩm mẫu 1", category: "Mẫu", price: 100000, priceDisplay: "100.000đ", image: "https://picsum.photos/seed/sample-1/800/1000" },
-  { id: 2, name: "Sản phẩm mẫu 2", category: "Mẫu", price: 200000, priceDisplay: "200.000đ", image: "https://picsum.photos/seed/sample-2/800/1000" },
+  { id: 1, name: "Sáº£n pháº©m máº«u 1", category: "Máº«u", price: 100000, priceDisplay: "100.000Ä‘", image: "https://picsum.photos/seed/sample-1/800/1000" },
+  { id: 2, name: "Sáº£n pháº©m máº«u 2", category: "Máº«u", price: 200000, priceDisplay: "200.000Ä‘", image: "https://picsum.photos/seed/sample-2/800/1000" },
 ];
+
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
+
+const getPricing = (item = {}) => {
+  const firstVariant = Array.isArray(item.variants)
+    ? item.variants[0]
+    : Array.isArray(item.product_variants)
+      ? item.product_variants[0]
+      : null;
+
+  const originalPrice = Number(
+    item.price ??
+      item.unit_price ??
+      item.original_price ??
+      item.regular_price ??
+      item.list_price ??
+      firstVariant?.price ??
+      firstVariant?.unit_price ??
+      firstVariant?.original_price ??
+      0
+  );
+  const discountAmount = Number(
+    item.discount_price ??
+      item.unit_discount_price ??
+      firstVariant?.discount_price ??
+      firstVariant?.unit_discount_price ??
+      0
+  );
+  const finalPrice = Math.max(originalPrice - discountAmount, 0);
+
+  return {
+    originalPrice,
+    discountAmount,
+    price: finalPrice,
+    priceDisplay: item.priceDisplay ?? formatCurrency(finalPrice),
+  };
+};
+
+const getFavoriteState = (item = {}) => Boolean(
+  item.is_favorite ??
+    item.isFavorite ??
+    item.favorited ??
+    item.is_liked ??
+    item.favorite_id ??
+    item.favorite
+);
+
+const getProductId = (item = {}) => item.product_id ?? item.productId ?? item.id ?? item.product?.id ?? null;
+
+const normalizeFavoriteItems = (payload) => {
+  const list = Array.isArray(payload)
+    ? payload
+    : payload?.data ?? payload?.items ?? payload?.favorites ?? payload?.results ?? [];
+
+  return Array.isArray(list) ? list : [];
+};
+
+const getFavoriteProductIds = (payload) => new Set(
+  normalizeFavoriteItems(payload)
+    .map(getProductId)
+    .filter((id) => id !== null && id !== undefined)
+    .map((id) => String(id))
+);
 
 const ProductsService = {
   async getCategories(params = {}) {
@@ -236,6 +299,7 @@ const ProductsService = {
           priceDisplay,
           shortDescription,
           description,
+          isFavorite: getFavoriteState(p),
         };
       });
 
@@ -343,6 +407,26 @@ const ProductsService = {
       return null;
     }
   },
+
+  async addFavorite(productId) {
+    const response = await api.post(`/products/${productId}/favorites`);
+    return response?.data ?? response;
+  },
+
+  async removeFavorite(productId) {
+    const response = await api.delete(`/products/${productId}/favorites`);
+    return response?.data ?? response;
+  },
+
+  async getUserFavorites(userId) {
+    if (!userId) return [];
+
+    const response = await api.get(`/users/${userId}/favorites`);
+    return normalizeFavoriteItems(response?.data ?? response);
+  },
+
+  getFavoriteProductIds,
 };
 
 export default ProductsService;
+

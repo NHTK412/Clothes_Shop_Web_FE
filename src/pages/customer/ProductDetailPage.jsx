@@ -6,6 +6,7 @@ import { notification } from "antd";
 import Cookies from "js-cookie";
 import productsService from "../../services/ProductsService";
 import CartService from "../../services/CartService";
+import ProfileService from "../../services/ProfileService";
 
 export default function ProductDetailPage() {
   const { id } = useParams();
@@ -18,6 +19,7 @@ export default function ProductDetailPage() {
   const [selectedColor, setSelectedColor] = useState("");
   const [quantity, setQuantity] = useState(1);
   const [addingToCart, setAddingToCart] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
   const normalizeSize = (str) => {
     if (!str) return null;
     const s = String(str).toLowerCase().trim();
@@ -93,7 +95,22 @@ export default function ProductDetailPage() {
       try {
         const p = await productsService.getProduct(id);
         if (!mounted) return;
-        setProduct(p);
+        let nextProduct = p;
+        if (Cookies.get("access_token") && p?.id) {
+          try {
+            const profile = await ProfileService.getProfile();
+            const favorites = await productsService.getUserFavorites(profile?.id);
+            const favoriteIds = productsService.getFavoriteProductIds(favorites);
+            nextProduct = {
+              ...p,
+              isFavorite: favoriteIds.has(String(p.id)),
+            };
+          } catch (favoriteError) {
+            nextProduct = p;
+          }
+        }
+        if (!mounted) return;
+        setProduct(nextProduct);
         // preselect first variant if available
         if (Array.isArray(p.variants) && p.variants.length > 0) {
           const firstAvailable = p.variants.find((v) => Number(v.stock || 0) > 0) || p.variants[0];
@@ -209,6 +226,48 @@ export default function ProductDetailPage() {
     }
   };
 
+  const handleToggleFavorite = async () => {
+    const token = Cookies.get("access_token");
+    if (!token) {
+      notification.warning({
+        message: "Vui lòng đăng nhập",
+        description: "Bạn cần đăng nhập trước khi thêm sản phẩm vào yêu thích.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!product?.id || favoriteLoading) return;
+
+    const nextFavorite = !product.isFavorite;
+    setProduct((prev) => prev ? { ...prev, isFavorite: nextFavorite } : prev);
+    setFavoriteLoading(true);
+
+    try {
+      if (nextFavorite) {
+        await productsService.addFavorite(product.id);
+      } else {
+        await productsService.removeFavorite(product.id);
+      }
+
+      notification.success({
+        message: nextFavorite ? "Đã thêm vào yêu thích" : "Đã bỏ yêu thích",
+        description: nextFavorite
+          ? "Sản phẩm đã được lưu vào danh sách yêu thích của bạn."
+          : "Sản phẩm đã được xóa khỏi danh sách yêu thích.",
+      });
+    } catch (e) {
+      setProduct((prev) => prev ? { ...prev, isFavorite: !nextFavorite } : prev);
+      notification.error({
+        message: "Không thể cập nhật yêu thích",
+        description: e?.response?.data?.message || "Vui lòng thử lại sau.",
+      });
+    } finally {
+      setFavoriteLoading(false);
+    }
+  };
+
+  // derive available sizes and colors from variants' attribute_values
   const sizeSet = new Map();
   const colorSet = new Map();
   variants.forEach((v) => {
@@ -271,55 +330,31 @@ export default function ProductDetailPage() {
 
           {/* Price block: prefer variant price if selected, show original+discount when both available */}
           {(() => {
+            const formatCurrency = (n) => `${Number(n || 0).toLocaleString('vi-VN')} VNĐ`;
             const pv = selectedVariant || {};
-            const variantPrice = normalizeNumber(
-              pv.price ?? pv.original_price ?? pv.regular_price ?? pv.list_price ?? pv.unitPrice ?? pv.priceAmount
+            const originalPrice = Number(
+              pv.price ?? pv.unit_price ?? pv.original_price ?? pv.regular_price ?? product.originalPrice ?? product.price ?? 0
             );
-            const variantSalePrice = normalizeNumber(pv.sale_price);
-            const variantDiscountPrice = normalizeNumber(pv.discount_price);
-            const productPrice = normalizeNumber(
-              product.price ?? product.original_price ?? product.regular_price ?? product.list_price ?? product.unitPrice ?? product.priceAmount
+            const discountAmount = Number(
+              pv.discount_price ?? pv.unit_discount_price ?? product.discountAmount ?? 0
             );
-            const productDiscount = normalizeNumber(product.discount_price ?? product.sale_price);
-            const productSalePrice = normalizeNumber(product.sale_price);
-            const productComputedDiscount = productDiscount != null
-              ? productDiscount
-              : (productSalePrice != null && productPrice != null
-                ? Math.max(productPrice - productSalePrice, 0)
-                : null);
-
-            const hasVariantPricing = variantPrice != null || variantSalePrice != null || variantDiscountPrice != null;
-            const basePrice = hasVariantPricing
-              ? (variantPrice ?? productPrice ?? variantSalePrice ?? 0)
-              : (productPrice ?? 0);
-
-            const variantComputedDiscount = variantDiscountPrice != null
-              ? variantDiscountPrice
-              : (variantSalePrice != null && (variantPrice != null || productPrice != null)
-                ? Math.max((variantPrice ?? productPrice ?? 0) - variantSalePrice, 0)
-                : null);
-
-            const discountAmount = hasVariantPricing
-              ? (variantComputedDiscount ?? productComputedDiscount ?? 0)
-              : (productComputedDiscount ?? 0);
-
-            const currentPrice = getCurrentPrice(basePrice, discountAmount);
-            const hasDiscount = discountAmount > 0 && discountAmount <= basePrice;
-
-            if (hasDiscount) {
+            const finalPrice = Math.max(originalPrice - discountAmount, 0);
+            const showBoth = originalPrice > 0 && discountAmount > 0 && finalPrice < originalPrice;
+            if (showBoth) {
               return (
                 <div className="mb-md">
-                  <div className="text-on-surface-variant line-through text-2xl md:text-3xl">{formatCurrency(basePrice)}</div>
-                  <div className="mt-3 text-red-500 font-bold text-3xl md:text-4xl">{formatCurrency(currentPrice)}</div>
+                  <div className="flex items-baseline gap-3">
+                    <div className="text-on-surface-variant line-through ">{formatCurrency(originalPrice)}</div>
+                    <div className=" text-red-500 font-bold text-3xl md:text-4xl">{formatCurrency(finalPrice)}</div>
+                  </div>
+                  <div className="text-sm text-on-surface-variant mt-2">Chưa có đánh giá</div>
                 </div>
               );
             }
-
+            const display = finalPrice || originalPrice || 0;
             return (
               <div className="mb-md">
-                <div className="font-bold text-3xl md:text-4xl">
-                  {basePrice > 0 ? formatCurrency(basePrice) : product.priceDisplay ?? formatCurrency(basePrice)}
-                </div>
+                <div className="font-bold text-3xl md:text-4xl">{formatCurrency(display)}</div>
                 <div className="text-sm text-on-surface-variant mt-2">Chưa có đánh giá</div>
               </div>
             );
@@ -449,10 +484,23 @@ export default function ProductDetailPage() {
               {addingToCart ? "Đang thêm..." : (Number(selectedVariant?.stock || 0) <= 0 ? "Hết hàng" : "Thêm vào giỏ hàng")}
             </button>
 
-            <button className="border p-3 rounded-md">
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4.318 6.318a4.5 4.5 0 016.364 0L12 7.636l1.318-1.318a4.5 4.5 0 116.364 6.364L12 21.364l-7.682-8.682a4.5 4.5 0 010-6.364z" />
-              </svg>
+            <button
+              aria-label={product.isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+              className={`border p-3 rounded-md transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                product.isFavorite
+                  ? "border-red-500 bg-red-50 text-red-600"
+                  : "border-gray-300 bg-white text-gray-700 hover:border-red-400 hover:text-red-500"
+              }`}
+              type="button"
+              disabled={favoriteLoading}
+              onClick={handleToggleFavorite}
+            >
+              <span
+                className="material-symbols-outlined text-xl"
+                style={{ fontVariationSettings: product.isFavorite ? "'FILL' 1" : "'FILL' 0" }}
+              >
+                favorite
+              </span>
             </button>
           </div>
         </div>

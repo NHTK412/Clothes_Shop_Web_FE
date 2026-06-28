@@ -12,6 +12,11 @@ dist
 dist-ssr
 *.local
 
+# PHP artifacts accidentally generated outside this React app
+vendor/
+composer.json
+composer.lock
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

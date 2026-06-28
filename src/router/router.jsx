@@ -21,6 +21,12 @@ import AdminCustomerDetailPage from "../pages/admin/AdminCustomerDetailPage";
 import AdminOrderListPage from "../pages/admin/AdminOrderListPage";
 import AdminOrderDetailPage from "../pages/admin/AdminOrderDetailPage";
 import AdminSettingsPage from "../pages/admin/AdminSettingsPage";
+import CheckoutPage from "../pages/customer/CheckoutPage";
+import ReturnPage from "../pages/customer/ReturnPage";
+import OrdersPage from "../pages/customer/OrdersPage";
+import OrderDetailPage from "../pages/customer/OrderDetailPage";
+import ProfilePage from "../pages/customer/ProfilePage";
+import FavoriteProductsPage from "../pages/customer/FavoriteProductsPage";
 
 const router = createBrowserRouter([
     {
@@ -96,6 +102,41 @@ const router = createBrowserRouter([
             {
                 path: "cart",
                 element: <CartDetailPage />
+            },
+            {
+                path: "login",
+                element: (
+            {
+                path: "products/:id",
+                element: <ProductDetailPage />
+            },
+            {
+                path: "favorites",
+                element: <FavoriteProductsPage />
+            },
+            {
+                path: "cart",
+                element: <CartDetailPage />
+            },
+            {
+                path: "checkout",
+                element: <CheckoutPage />
+            },
+            {
+                path: "return",
+                element: <ReturnPage />
+            },
+            {
+                path: "profile",
+                element: <ProfilePage />
+            },
+            {
+                path: "orders",
+                element: <OrdersPage />
+            },
+            {
+                path: "orders/:id",
+                element: <OrderDetailPage />
             },
             {
                 path: "login",
