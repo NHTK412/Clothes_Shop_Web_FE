@@ -3,6 +3,7 @@ import { notification } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import productsService from "../../services/ProductsService";
+import PromotionService from "../../services/PromotionService";
 import Hero from "../../components/Hero";
 
 const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
@@ -10,6 +11,29 @@ const getCurrentPrice = (price, discount) => {
   const basePrice = Number(price || 0);
   const discountAmount = Number(discount || 0);
   return Math.max(basePrice - discountAmount, 0);
+};
+
+const getPromotionCountdown = (promotion) => {
+	if (!promotion) return null;
+
+	const now = Date.now();
+	const startTime = new Date(promotion.start_date).getTime();
+	const endTime = new Date(promotion.end_date).getTime();
+
+	if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || now >= endTime) {
+		return null;
+	}
+
+	const isUpcoming = now < startTime;
+	const remaining = Math.max((isUpcoming ? startTime : endTime) - now, 0);
+
+	return {
+		phase: isUpcoming ? "upcoming" : "active",
+		days: Math.floor(remaining / 86400000),
+		hours: Math.floor((remaining % 86400000) / 3600000),
+		minutes: Math.floor((remaining % 3600000) / 60000),
+		seconds: Math.floor((remaining % 60000) / 1000),
+	};
 };
 
 export default function HomePage() {
@@ -23,6 +47,8 @@ export default function HomePage() {
 
 	const [categories, setCategories] = useState([]);
 	const [featured, setFeatured] = useState([]);
+	const [promotion, setPromotion] = useState(null);
+	const [promotionCountdown, setPromotionCountdown] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 
@@ -31,14 +57,17 @@ export default function HomePage() {
 		async function load() {
 			setLoading(true);
 			try {
-				const [cats, prods] = await Promise.all([
+				const [cats, prods, currentPromotion] = await Promise.all([
 					productsService.getCategories(),
 					productsService.getFeaturedProducts(),
+					PromotionService.getCurrentPromotion().catch(() => null),
 				]);
 
 				if (!mounted) return;
 				setCategories(cats || []);
 				setFeatured(prods || []);
+				setPromotion(currentPromotion);
+				setPromotionCountdown(getPromotionCountdown(currentPromotion));
 			} catch (err) {
 				setError(err.message || "Lỗi tải dữ liệu");
 			} finally {
@@ -50,6 +79,17 @@ export default function HomePage() {
 			mounted = false;
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!promotion) return undefined;
+
+		const updateCountdown = () => {
+			setPromotionCountdown(getPromotionCountdown(promotion));
+		};
+
+		const timer = window.setInterval(updateCountdown, 1000);
+		return () => window.clearInterval(timer);
+	}, [promotion]);
 
 	useEffect(() => {
 		// micro interactions and sticky header (port of original script)
@@ -237,22 +277,58 @@ export default function HomePage() {
 					</div>
 				</section>
 
-				<section className="py-xl">
-					<div className="max-w-max-width mx-auto px-gutter">
-						<div className="relative w-full h-[400px] rounded-2xl overflow-hidden bg-primary-container">
-							<div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-md text-white">
-								<h2 className="font-display-lg text-display-lg mb-sm">Giảm giá mùa hè</h2>
-								<p className="font-body-lg text-body-lg mb-lg opacity-90 max-w-2xl">Cơ hội sở hữu những thiết kế đẳng cấp với ưu đãi lên đến 50%. Áp dụng cho toàn bộ danh mục sản phẩm New Arrivals.</p>
-								<div className="flex gap-sm">
-									<div className="bg-white/20 backdrop-blur-md px-md py-sm rounded-lg border border-white/30"><span className="font-headline-md text-headline-md block">12</span><span className="font-label-sm text-label-sm uppercase">Ngày</span></div>
-									<div className="bg-white/20 backdrop-blur-md px-md py-sm rounded-lg border border-white/30"><span className="font-headline-md text-headline-md block">08</span><span className="font-label-sm text-label-sm uppercase">Giờ</span></div>
-									<div className="bg-white/20 backdrop-blur-md px-md py-sm rounded-lg border border-white/30"><span className="font-headline-md text-headline-md block">45</span><span className="font-label-sm text-label-sm uppercase">Phút</span></div>
+				{promotion && promotionCountdown && (
+					<section className="py-xl">
+						<div className="max-w-max-width mx-auto px-gutter">
+							<div className="relative w-full h-[400px] rounded-2xl overflow-hidden bg-primary-container">
+								<div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-md text-white">
+									<p className="mb-xs font-label-md uppercase tracking-[0.2em] text-white/80">
+										{promotionCountdown.phase === "upcoming" ? "Sắp diễn ra" : "Đang diễn ra"}
+									</p>
+									<h2 className="font-display-lg text-display-lg mb-sm">
+										{promotion.name || "Chương trình khuyến mãi"}
+									</h2>
+									<p className="font-body-lg text-body-lg mb-sm opacity-90 max-w-2xl">
+										{promotion.description ||
+											`Ưu đãi ${promotion.discount_type === "percentage"
+												? `${Number(promotion.discount_amount || 0)}%`
+												: formatCurrency(promotion.discount_amount)
+											} cho các sản phẩm trong chương trình.`}
+									</p>
+									<p className="mb-md text-sm font-medium text-white/80">
+										{promotionCountdown.phase === "upcoming"
+											? "Chương trình bắt đầu sau"
+											: "Chương trình kết thúc sau"}
+									</p>
+									<div className="flex gap-sm">
+										{[
+											["Ngày", promotionCountdown.days],
+											["Giờ", promotionCountdown.hours],
+											["Phút", promotionCountdown.minutes],
+											["Giây", promotionCountdown.seconds],
+										].map(([label, value]) => (
+											<div
+												key={label}
+												className="min-w-16 bg-white/20 backdrop-blur-md px-md py-sm rounded-lg border border-white/30"
+											>
+												<span className="font-headline-md text-headline-md block">
+													{String(value).padStart(2, "0")}
+												</span>
+												<span className="font-label-sm text-label-sm uppercase">{label}</span>
+											</div>
+										))}
+									</div>
+									<Link
+										to="/products"
+										className="mt-lg bg-white text-primary font-label-md text-label-md px-lg py-sm rounded-lg hover:bg-surface-container transition-all"
+									>
+										Khám phá ngay
+									</Link>
 								</div>
-								<button className="mt-lg bg-white text-primary font-label-md text-label-md px-lg py-sm rounded-lg hover:bg-surface-container transition-all">Khám Phá Ngay</button>
 							</div>
 						</div>
-					</div>
-				</section>
+					</section>
+				)}
 
 				{/* <section className="py-xl bg-surface-container border-t border-outline-variant">
 					<div className="max-w-max-width mx-auto px-gutter text-center">
