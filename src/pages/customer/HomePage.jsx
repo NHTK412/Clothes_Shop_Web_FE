@@ -246,7 +246,7 @@ export default function HomePage() {
 					</div>
 				</section>
 
-				<section className="py-xl bg-surface-container border-t border-outline-variant">
+				{/* <section className="py-xl bg-surface-container border-t border-outline-variant">
 					<div className="max-w-max-width mx-auto px-gutter text-center">
 						<h3 className="font-headline-md text-headline-md text-on-surface mb-sm">Trải nghiệm phong cách LUXE</h3>
 						<p className="font-body-md text-body-md text-on-surface-variant mb-lg  mx-auto">Đăng ký để nhận thông tin về các bộ sưu tập giới hạn và ưu đãi độc quyền sớm nhất.</p>
@@ -255,7 +255,7 @@ export default function HomePage() {
 							<button className="bg-primary text-white font-label-md text-label-md px-md py-sm rounded-lg whitespace-nowrap hover:bg-on-primary-fixed-variant transition-colors" type="submit">Đăng ký</button>
 						</form>
 					</div>
-				</section>
+				</section> */}
 			</main>
 
 
