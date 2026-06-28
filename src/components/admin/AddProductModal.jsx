@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { notification } from 'antd';
+import { UploadOutlined } from '@ant-design/icons';
+import { Button, notification, Upload } from 'antd';
 import AttributeService from '../../services/AttributeService';
 import ProductsService from '../../services/ProductsService';
 
@@ -242,8 +243,8 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
     return base ? `${base}-${row.id}` : `VARIANT-${row.id}`;
   };
 
-  const handleImageChange = async (e) => {
-    const file = e.target.files[0];
+  const handleImageChange = async (fileOrEvent) => {
+    const file = fileOrEvent?.target?.files?.[0] ?? fileOrEvent;
     if (file) {
       // Show preview
       const reader = new FileReader();
@@ -404,21 +405,26 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-3 backdrop-blur-[2px] md:p-6">
+      <div className="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-outline-variant bg-surface-container-low shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 bg-surface-container-low border-b border-outline-variant p-md flex justify-between items-center z-10">
-          <h3 className="font-headline-sm text-headline-sm text-on-surface">Thêm Sản Phẩm Mới</h3>
+        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-outline-variant bg-white px-lg py-md">
+          <div>
+            <h3 className="font-headline-sm text-headline-sm text-on-surface">Thêm sản phẩm mới</h3>
+            <p className="mt-1 text-sm text-on-surface-variant">Nhập thông tin chung, danh mục và các biến thể của sản phẩm.</p>
+          </div>
           <button
+            type="button"
             onClick={onClose}
-            className="text-on-surface-variant hover:text-on-surface text-2xl"
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-xl text-on-surface-variant transition-colors hover:bg-surface-container hover:text-on-surface"
+            aria-label="Đóng"
           >
             ✕
           </button>
         </div>
 
         {/* Content */}
-        <form onSubmit={handleSubmit} className="p-md space-y-md">
+        <form onSubmit={handleSubmit} className="space-y-lg p-md md:p-lg">
           {/* Alert Messages */}
           {error && (
             <div className="p-sm bg-error-container text-on-error-container rounded-lg text-body-sm">
@@ -431,25 +437,35 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
             </div>
           )}
 
+          <section className="grid gap-lg rounded-xl border border-outline-variant bg-white p-md md:grid-cols-2 md:p-lg">
+            <div className="border-b border-outline-variant pb-sm md:col-span-2">
+              <h4 className="font-label-md text-on-surface">Thông tin sản phẩm</h4>
+              <p className="mt-1 text-sm text-on-surface-variant">Các thông tin cơ bản được hiển thị trên cửa hàng.</p>
+            </div>
+
           {/* Image Upload */}
-          <div className="space-y-sm">
+          <div className="space-y-sm md:col-span-2">
             <label className="font-label-md text-label-md text-on-surface">
               Ảnh Sản Phẩm
             </label>
-            <div className="relative border-2 border-dashed border-outline-variant rounded-lg p-md text-center hover:border-primary transition-colors cursor-pointer">
-              <input
-                type="file"
+            <Upload.Dragger
+                name="image"
                 accept="image/*"
-                onChange={handleImageChange}
+                multiple={false}
+                showUploadList={false}
                 disabled={isLoading}
-                className="absolute inset-0 opacity-0 cursor-pointer"
-              />
+                beforeUpload={(file) => {
+                  handleImageChange(file);
+                  return Upload.LIST_IGNORE;
+                }}
+                className="[&_.ant-upload-drag]:!rounded-xl [&_.ant-upload-drag]:!border-outline [&_.ant-upload-drag]:!bg-surface-container-low [&_.ant-upload-drag]:!p-lg hover:[&_.ant-upload-drag]:!border-primary"
+              >
               {imagePreview ? (
                 <div className="space-y-sm">
                   <img
                     src={imagePreview}
                     alt="Xem trước sản phẩm"
-                    className="w-24 h-24 mx-auto object-cover rounded"
+                    className="mx-auto h-32 w-32 rounded-lg border border-outline-variant object-cover"
                   />
                   <p className="text-label-sm text-on-surface-variant">
                     {uploadedImageUrl ? '✓ Ảnh đã tải lên' : isLoading ? 'Đang tải...' : 'Ảnh chưa được tải lên'}
@@ -464,10 +480,10 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
                   <p className="text-label-sm text-on-surface-variant">JPG, PNG hoặc WebP. Tối đa 2 MB</p>
                 </div>
               )}
-            </div>
+            </Upload.Dragger>
           </div>
 
-          <div className="space-y-sm">
+          <div className="space-y-sm md:col-span-2">
             <label className="font-label-md text-label-md text-on-surface">
               URL Ảnh Sản Phẩm (tùy chọn)
             </label>
@@ -515,7 +531,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
           </div>
 
           {/* Price Row */}
-          <div className="grid grid-cols-2 gap-md">
+          <div className="grid grid-cols-1 gap-md sm:grid-cols-2 md:col-span-2">
             <div className="space-y-sm">
               <label className="font-label-md text-label-md text-on-surface">
                 Giá Gốc *
@@ -548,7 +564,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
             </div>
           </div>
 
-          <div className="space-y-sm">
+          <div className="space-y-sm md:col-span-2">
             <label className="font-label-md text-label-md text-on-surface">Danh mục</label>
             <select
               multiple
@@ -570,8 +586,9 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
               Giữ Ctrl (Windows) hoặc Command (macOS) để chọn nhiều danh mục.
             </p>
           </div>
+          </section>
 
-          <div className="border border-outline-variant rounded-xl p-md space-y-sm">
+          <section className="space-y-md rounded-xl border border-outline-variant bg-white p-md md:p-lg">
             <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="font-headline-sm text-on-surface">Biến thể sản phẩm</h2>
@@ -589,7 +606,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
               </button>
             </div>
 
-            <div className="rounded-2xl border border-dashed border-outline-variant p-md space-y-md bg-surface-container-low">
+            <div className="space-y-md rounded-xl border border-dashed border-outline-variant bg-surface-container-low p-md">
               <div className="flex items-center justify-between gap-3">
                 <p className="font-label-md text-on-surface">Biến thể mới</p>
                 <span className="text-sm text-on-surface-variant">Chọn một lần rồi thêm</span>
@@ -664,7 +681,7 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
               <p className="text-sm text-on-surface-variant">Chưa có biến thể nào. Chọn thuộc tính và số lượng rồi bấm dấu cộng để tạo biến thể đầu tiên.</p>
             ) : (
               variantRows.map((row, rowIndex) => (
-                <div key={row.id} className="rounded-2xl border border-outline-variant p-md space-y-md bg-surface-container">
+                <div key={row.id} className="space-y-md rounded-xl border border-outline-variant bg-white p-md shadow-sm">
                   <div className="flex items-center justify-between gap-3">
                     <p className="font-label-md text-on-surface">Biến thể {rowIndex + 1}</p>
                     <button
@@ -736,48 +753,62 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
                         className="w-full px-sm py-2 border border-outline-variant rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none text-body-sm"
                       />
                     </label>
-                    <label className="space-y-2 md:col-span-2 xl:col-span-3">
-                      <span className="font-label-sm text-label-sm text-on-surface-variant">
+                    <div className="space-y-2 md:col-span-2 xl:col-span-3">
+                      <p className="font-label-sm text-label-sm text-on-surface-variant">
                         Ảnh biến thể (tùy chọn)
-                      </span>
-                      <input
-                        type="file"
-                        accept="image/*"
-                        disabled={row.isUploadingImage || isLoading}
-                        onChange={(e) => handleVariantImageChange(row.id, e.target.files?.[0])}
-                        className="block w-full rounded-lg border border-outline-variant bg-white px-sm py-2 text-body-sm file:mr-3 file:rounded-md file:border-0 file:bg-primary-container file:px-3 file:py-1 file:text-primary disabled:opacity-50"
-                      />
-                      <div className="flex items-center gap-3 rounded-lg bg-surface-container-low p-2">
+                      </p>
+                      <div className="flex flex-col gap-3 rounded-lg border border-outline-variant bg-surface-container-low p-3 sm:flex-row sm:items-center">
                         {(row.imagePreview || row.image || imagePreview) ? (
                           <img
                             src={row.imagePreview || row.image || imagePreview}
                             alt={`Xem trước ảnh biến thể ${rowIndex + 1}`}
-                            className="h-14 w-14 rounded-md object-cover"
+                            className="h-16 w-16 shrink-0 rounded-md border border-outline-variant object-cover"
                           />
                         ) : (
-                          <div className="flex h-14 w-14 items-center justify-center rounded-md bg-surface-container text-on-surface-variant">
+                          <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-md border border-outline-variant bg-white text-on-surface-variant">
                             <span className="material-symbols-outlined">image</span>
                           </div>
                         )}
-                        <p className="text-label-sm text-on-surface-variant">
-                          {row.isUploadingImage
-                            ? 'Đang tải ảnh biến thể...'
-                            : row.image
-                              ? 'Đã dùng ảnh riêng cho biến thể'
-                              : imagePreview
-                                ? 'Chưa chọn ảnh riêng — đang dùng ảnh sản phẩm chính'
-                                : 'Chưa có ảnh sản phẩm chính hoặc ảnh biến thể'}
-                        </p>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-sm font-medium text-on-surface">
+                            {row.isUploadingImage
+                              ? 'Đang tải ảnh...'
+                              : row.image
+                                ? 'Ảnh riêng của biến thể'
+                                : imagePreview
+                                  ? 'Đang dùng ảnh sản phẩm chính'
+                                  : 'Chưa có ảnh'}
+                          </p>
+                          <p className="mt-1 text-xs text-on-surface-variant">JPG, PNG hoặc WebP, tối đa 2 MB.</p>
+                        </div>
+                        <Upload
+                          accept="image/*"
+                          multiple={false}
+                          showUploadList={false}
+                          disabled={row.isUploadingImage || isLoading}
+                          beforeUpload={(file) => {
+                            handleVariantImageChange(row.id, file);
+                            return Upload.LIST_IGNORE;
+                          }}
+                        >
+                          <Button
+                            icon={<UploadOutlined />}
+                            disabled={row.isUploadingImage || isLoading}
+                            className="!h-9 !rounded-lg !border-outline-variant !bg-white !px-3 !text-on-surface !shadow-none"
+                          >
+                            {row.image || row.imagePreview ? 'Thay ảnh' : 'Chọn ảnh'}
+                          </Button>
+                        </Upload>
                       </div>
-                    </label>
+                    </div>
                   </div>
                 </div>
               ))
             )}
-          </div>
+          </section>
 
           {/* Action Buttons */}
-          <div className="flex gap-sm justify-end pt-md border-t border-outline-variant">
+          <div className="sticky bottom-0 z-10 -mx-md -mb-md flex justify-end gap-sm border-t border-outline-variant bg-white px-md py-md md:-mx-lg md:-mb-lg md:px-lg">
             <button
               type="button"
               onClick={onClose}
