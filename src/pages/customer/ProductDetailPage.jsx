@@ -1,6 +1,6 @@
 /* eslint-disable no-useless-assignment */
 /* eslint-disable no-unused-vars */
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import { notification } from "antd";
 import Cookies from "js-cookie";
@@ -27,8 +27,64 @@ export default function ProductDetailPage() {
     if (/^(xl|x-large|xlarge|extra large|extra-large|x l)$/.test(s)) return "XL";
     return null;
   };
+
+  const getVariantSize = (variant) => {
+    const avs = variant.attribute_values || [];
+    const sizeAv = avs.find((av) => {
+      const raw = String(av.display_value ?? av.value ?? "").toLowerCase().trim();
+      if (Number(av.attribute_type_id) === 2) return true;
+      return /^(s|m|l|xl|xxl|small|medium|large)$/.test(raw);
+    });
+    if (!sizeAv) return null;
+    return normalizeSize(String(sizeAv.display_value ?? sizeAv.value ?? "").toLowerCase());
+  };
+
+  const getVariantColor = (variant) => {
+    const avs = variant.attribute_values || [];
+    const colorAv = avs.find((av) => {
+      const raw = String(av.display_value ?? av.value ?? "").toLowerCase().trim();
+      if (Number(av.attribute_type_id) === 1) return true;
+      return /^(white|black|blue|red|brown|grey|gray|green|yellow|pink|purple)$/.test(raw) || raw.includes('color');
+    });
+    if (!colorAv) return null;
+    return String(colorAv.value ?? colorAv.display_value ?? colorAv.id ?? "").trim();
+  };
+
+  const isColorAvailable = (colorValue) => {
+    return variants.some((v) => {
+      if (Number(v.stock || 0) <= 0) return false;
+      if (selectedSize) {
+        return (
+          String(getVariantColor(v)) === String(colorValue) &&
+          String(getVariantSize(v)) === String(selectedSize)
+        );
+      }
+      return String(getVariantColor(v)) === String(colorValue);
+    });
+  };
+
+  const isSizeAvailable = (sizeValue) => {
+    return variants.some((v) => {
+      if (Number(v.stock || 0) <= 0) return false;
+      if (selectedColor) {
+        return (
+          String(getVariantSize(v)) === String(sizeValue) &&
+          String(getVariantColor(v)) === String(selectedColor)
+        );
+      }
+      return String(getVariantSize(v)) === String(sizeValue);
+    });
+  };
+
   const [activeTab, setActiveTab] = useState(0);
   const [similarProducts, setSimilarProducts] = useState([]);
+  const productSectionRef = useRef(null);
+
+  const handleBlankClick = (e) => {
+    if (e.target === e.currentTarget) {
+      clearSelection();
+    }
+  };
 
   useEffect(() => {
     let mounted = true;
@@ -39,10 +95,10 @@ export default function ProductDetailPage() {
         if (!mounted) return;
         setProduct(p);
         // preselect first variant if available
-        if (p?.variants && p.variants.length > 0) setSelectedVariant(p.variants[0]);
-        if (p?.variants && p.variants.length > 0) {
-          const first = p.variants[0];
-          const avs = first.attribute_values || [];
+        if (Array.isArray(p.variants) && p.variants.length > 0) {
+          const firstAvailable = p.variants.find((v) => Number(v.stock || 0) > 0) || p.variants[0];
+          setSelectedVariant(firstAvailable);
+          const avs = firstAvailable.attribute_values || [];
           const sizeAv = avs.find((av) => Number(av.attribute_type_id) === 2 || /^(s|m|l|xl|small|medium|large)$/i.test(String((av.display_value||av.value||'')).toLowerCase()));
           const colorAv = avs.find((av) => Number(av.attribute_type_id) === 1 || /^(white|black|blue|red|brown|grey|gray|green|yellow|pink|purple)$/i.test(String((av.display_value||av.value||'')).toLowerCase()));
           if (sizeAv) {
@@ -96,6 +152,26 @@ export default function ProductDetailPage() {
 
   const variants = product.variants || [];
 
+  const normalizeNumber = (value) => {
+    if (value === "" || value === null || value === undefined) return null;
+    const number = Number(value);
+    return Number.isFinite(number) ? number : null;
+  };
+
+  const getCurrentPrice = (price, discount) => {
+    const basePrice = Number(price || 0);
+    const discountAmount = Number(discount || 0);
+    return Math.max(basePrice - discountAmount, 0);
+  };
+
+  const getDiscountAmount = (price, discount) => {
+    const basePrice = Number(price || 0);
+    const discountAmount = Number(discount || 0);
+    return discountAmount > 0 && discountAmount <= basePrice ? discountAmount : 0;
+  };
+
+  const formatCurrency = (n) => Number(n || 0).toLocaleString('vi-VN') + 'đ';
+
   const handleAddToCart = async () => {
     const token = Cookies.get("access_token");
     if (!token) {
@@ -133,53 +209,33 @@ export default function ProductDetailPage() {
     }
   };
 
-  // derive available sizes and colors from variants' attribute_values
   const sizeSet = new Map();
   const colorSet = new Map();
   variants.forEach((v) => {
-    const avs = v.attribute_values || [];
-    avs.forEach((av) => {
-      const rawVal = av.value ?? av.display_value ?? av.id;
-      const key = String(rawVal);
-      const display = av.display_value ?? av.value ?? String(av.id);
-      // Heuristic: attribute_type_id 1=color, 2=size — fall back to name matching
-      const typeId = av.attribute_type_id;
-      const lower = (av.display_value || av.value || "").toString().toLowerCase().trim();
-      const sizeRegex = /^(s|m|l|xl|xxl|small|medium|large)$/i;
-      const colorRegex = /^(white|black|blue|red|brown|grey|gray|green|yellow|pink|purple)$/i;
-      const normSize = normalizeSize(lower);
-      if (typeId === 2 || sizeRegex.test(lower)) {
-        const sizeKey = normSize || key;
-        const sizeDisplay = normSize || display;
-        if (['S','M','L','XL'].includes(String(sizeKey))) {
-          if (!sizeSet.has(sizeKey)) sizeSet.set(sizeKey, { value: sizeKey, display: sizeDisplay });
-        }
-      } else if (typeId === 1 || colorRegex.test(lower) || lower.includes('color')) {
-        // attempt to extract hex from meta_data
-        let hex = null;
-        try {
-          const md = av.meta_data;
-          const parsed = typeof md === "string" ? JSON.parse(md || "{}") : (md || {});
-          hex = parsed.hex || parsed.color || null;
-        } catch (e) {
-          hex = null;
-        }
-        if (!hex) {
-          const cmap = { white: "#FFFFFF", black: "#000000", blue: "#1F66FF", red: "#FF0000", brown: "#8A3B0A", grey: "#9CA3AF", gray: "#9CA3AF" };
-          hex = cmap[lower] || null;
-        }
-        if (!colorSet.has(key)) colorSet.set(key, { value: key, display, hex });
-      } else {
-        // fallback: if looks like color name include as color, else as size
-        if (/^[#0-9a-fA-F]{3,7}$/.test(key) || /color/.test(lower)) {
-          if (!colorSet.has(key)) colorSet.set(key, { value: key, display, hex: key.startsWith('#') ? key : null });
-        } else {
-          // fallback: try normalize as size
-          const ns = normalizeSize(lower);
-          if (ns && !sizeSet.has(ns)) sizeSet.set(ns, { value: ns, display: ns });
-        }
+    const size = getVariantSize(v);
+    const color = getVariantColor(v);
+    if (size && !sizeSet.has(size)) {
+      sizeSet.set(size, { value: size, display: size });
+    }
+    if (color && !colorSet.has(color)) {
+      const avs = v.attribute_values || [];
+      const colorAv = avs.find((av) => String(av.value ?? av.display_value ?? av.id) === String(color));
+      const display = colorAv?.display_value ?? colorAv?.value ?? color;
+      const lower = String(display).toLowerCase().trim();
+      let hex = null;
+      try {
+        const md = colorAv?.meta_data;
+        const parsed = typeof md === "string" ? JSON.parse(md || "{}") : (md || {});
+        hex = parsed.hex || parsed.color || null;
+      } catch (e) {
+        hex = null;
       }
-    });
+      if (!hex) {
+        const cmap = { white: "#FFFFFF", black: "#000000", blue: "#1F66FF", red: "#FF0000", brown: "#8A3B0A", grey: "#9CA3AF", gray: "#9CA3AF", green: "#10B981", yellow: "#F59E0B", pink: "#EC4899", purple: "#8B5CF6" };
+        hex = cmap[lower] || null;
+      }
+      colorSet.set(color, { value: color, display, hex });
+    }
   });
   // ensure sizes shown in canonical order S, M, L, XL
   const sizeOrder = ['S', 'M', 'L', 'XL'];
@@ -187,12 +243,27 @@ export default function ProductDetailPage() {
   const colors = Array.from(colorSet.values());
   const selectedColorDisplay = colors.find((c) => String(c.value) === String(selectedColor))?.display ?? (selectedColor || "");
 
+  const findVariantWithSelection = (color, size) => {
+    return variants.find((v) => {
+      if (Number(v.stock || 0) <= 0) return false;
+      if (color && String(getVariantColor(v)) !== String(color)) return false;
+      if (size && String(getVariantSize(v)) !== String(size)) return false;
+      return true;
+    });
+  };
+
+  const clearSelection = () => {
+    setSelectedColor("");
+    setSelectedSize("");
+    setSelectedVariant(null);
+  };
+
   return (
     <div className="max-w-max-width mx-auto px-gutter py-xl">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-lg">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-lg" ref={productSectionRef} onClick={handleBlankClick}>
         <div>
-          <div className=" rounded-lg overflow-hidden bg-surface-container">
-            <img src={selectedVariant?.image ?? product.image} alt={product.name} className="w-full object-cover" />
+          <div className="rounded-lg overflow-hidden bg-surface-container aspect-[3/4] md:aspect-[4/5]">
+            <img src={selectedVariant?.image ?? product.image} alt={product.name} className="w-full h-full object-cover" />
           </div>
         </div>
         <div>
@@ -200,38 +271,63 @@ export default function ProductDetailPage() {
 
           {/* Price block: prefer variant price if selected, show original+discount when both available */}
           {(() => {
-            const formatCurrency = (n) => Number(n || 0).toLocaleString('vi-VN') + 'đ';
             const pv = selectedVariant || {};
-            // originalPrice: prefer explicit original/regular fields, fall back to price
-            const originalPrice = Number(
-              pv.original_price ?? pv.regular_price ?? pv.price ?? product.original_price ?? product.regular_price ?? product.list_price ?? product.price ?? 0
+            const variantPrice = normalizeNumber(
+              pv.price ?? pv.original_price ?? pv.regular_price ?? pv.list_price ?? pv.unitPrice ?? pv.priceAmount
             );
-            // promoPrice: prefer discount/sale, else variant/product price
-            const promoPrice = Number(
-              pv.discount_price ?? pv.sale_price ?? pv.price ?? product.discount_price ?? product.sale_price ?? product.price ?? 0
+            const variantSalePrice = normalizeNumber(pv.sale_price);
+            const variantDiscountPrice = normalizeNumber(pv.discount_price);
+            const productPrice = normalizeNumber(
+              product.price ?? product.original_price ?? product.regular_price ?? product.list_price ?? product.unitPrice ?? product.priceAmount
             );
-            const showBoth = originalPrice > 0 && promoPrice > 0 && promoPrice < originalPrice;
-            if (showBoth) {
+            const productDiscount = normalizeNumber(product.discount_price ?? product.sale_price);
+            const productSalePrice = normalizeNumber(product.sale_price);
+            const productComputedDiscount = productDiscount != null
+              ? productDiscount
+              : (productSalePrice != null && productPrice != null
+                ? Math.max(productPrice - productSalePrice, 0)
+                : null);
+
+            const hasVariantPricing = variantPrice != null || variantSalePrice != null || variantDiscountPrice != null;
+            const basePrice = hasVariantPricing
+              ? (variantPrice ?? productPrice ?? variantSalePrice ?? 0)
+              : (productPrice ?? 0);
+
+            const variantComputedDiscount = variantDiscountPrice != null
+              ? variantDiscountPrice
+              : (variantSalePrice != null && (variantPrice != null || productPrice != null)
+                ? Math.max((variantPrice ?? productPrice ?? 0) - variantSalePrice, 0)
+                : null);
+
+            const discountAmount = hasVariantPricing
+              ? (variantComputedDiscount ?? productComputedDiscount ?? 0)
+              : (productComputedDiscount ?? 0);
+
+            const currentPrice = getCurrentPrice(basePrice, discountAmount);
+            const hasDiscount = discountAmount > 0 && discountAmount <= basePrice;
+
+            if (hasDiscount) {
               return (
                 <div className="mb-md">
-                  <div className="flex items-baseline gap-3">
-                    <div className="text-on-surface-variant line-through ">{formatCurrency(originalPrice)}</div>
-                    <div className=" text-red-500 font-bold text-3xl md:text-4xl">{formatCurrency(promoPrice)}</div>
-                  </div>
-                  <div className="text-sm text-on-surface-variant mt-2">Chưa có đánh giá</div>
+                  <div className="text-on-surface-variant line-through text-2xl md:text-3xl">{formatCurrency(basePrice)}</div>
+                  <div className="mt-3 text-red-500 font-bold text-3xl md:text-4xl">{formatCurrency(currentPrice)}</div>
                 </div>
               );
             }
-            const display = promoPrice || originalPrice || 0;
+
             return (
               <div className="mb-md">
-                <div className="font-bold text-3xl md:text-4xl">{product.priceDisplay ?? formatCurrency(display)}</div>
+                <div className="font-bold text-3xl md:text-4xl">
+                  {basePrice > 0 ? formatCurrency(basePrice) : product.priceDisplay ?? formatCurrency(basePrice)}
+                </div>
                 <div className="text-sm text-on-surface-variant mt-2">Chưa có đánh giá</div>
               </div>
             );
           })()}
 
           <hr className="my-4 border-t border-divider" />
+          <h3 className="text-2xl font-semibold mb-3">Mô tả sản phẩm</h3>
+          <p className="text-base text-on-surface-variant mb-4 text-xl md:text-xl">{product.description}</p>
 
           {variants.length > 0 && (
             <>
@@ -243,30 +339,42 @@ export default function ProductDetailPage() {
                       <div className=" font-medium text-1xl text-gray-700">{selectedColorDisplay}</div>
                     ) : null}
                   </div>
-                  <div className="flex items-center gap-3">
-                    {colors.map((c) => (
-                      <button
-                        key={c.value}
-                        aria-label={c.display}
-                        onClick={() => {
-                          setSelectedColor(c.value);
-                          const found = variants.find((v) => {
-                            const avs = v.attribute_values || [];
-                            const hasColor = avs.some((av) => String(av.value) === String(c.value) || String(av.display_value) === String(c.display));
-                            const hasSize = selectedSize ? avs.some((av) => {
-                              const norm = normalizeSize((av.display_value || av.value || '').toString().toLowerCase());
-                              return norm === selectedSize;
-                            }) : true;
-                            return hasColor && hasSize;
-                          });
-                          if (found) setSelectedVariant(found);
-                        }}
-                        className={`w-12 h-10 rounded-full border-2 flex items-center justify-center p-1 ${selectedColor === c.value ? 'ring-2 ring-blue-600' : ''}`}
-                        style={{ background: 'transparent' }}
-                      >
-                        <span className="block w-full h-full rounded-full border" style={{ background: c.hex || '#FFFFFF' }} />
-                      </button>
-                    ))}
+                  <div
+                    className="flex items-center gap-3"
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget) clearSelection();
+                    }}
+                  >
+                    {colors.map((c) => {
+                      const available = isColorAvailable(c.value);
+                      return (
+                        <button
+                          key={c.value}
+                          aria-label={c.display}
+                          type="button"
+                          onClick={() => {
+                            if (!available) return;
+                            setSelectedColor(c.value);
+                            const found = findVariantWithSelection(c.value, selectedSize) || findVariantWithSelection(c.value, null);
+                            if (found) {
+                              setSelectedVariant(found);
+                              setSelectedSize(getVariantSize(found) || selectedSize);
+                            } else {
+                              const fallback = findVariantWithSelection(c.value, null);
+                              if (fallback) {
+                                setSelectedVariant(fallback);
+                                setSelectedSize(getVariantSize(fallback) || '');
+                              }
+                            }
+                          }}
+                          disabled={!available}
+                          className={`w-12 h-10 rounded-full border-2 flex items-center justify-center p-1 transition ${selectedColor === c.value ? 'ring-2 ring-blue-600' : ''} ${available ? 'cursor-pointer' : 'opacity-40 cursor-not-allowed'}`}
+                          style={{ background: 'transparent' }}
+                        >
+                          <span className="block w-full h-full rounded-full border" style={{ background: c.hex || '#FFFFFF' }} />
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -274,28 +382,40 @@ export default function ProductDetailPage() {
               {sizes.length > 0 && (
                 <div className="mb-4">
                   <h4 className="font-label-sm mb-2 mt-5">Kích cỡ</h4>
-                  <div className="flex gap-3 mb-3 mt-2">
-                    {sizes.map((s) => (
-                      <button
-                        key={s.value}
-                        onClick={() => {
-                          setSelectedSize(s.value);
-                          const found = variants.find((v) => {
-                            const avs = v.attribute_values || [];
-                            const hasSize = avs.some((av) => {
-                              const norm = normalizeSize((av.display_value || av.value || '').toString().toLowerCase());
-                              return norm === s.value;
-                            });
-                            const hasColor = selectedColor ? avs.some((av) => String(av.value) === String(selectedColor) || String(av.display_value) === String(selectedColor)) : true;
-                            return hasSize && hasColor;
-                          });
-                          if (found) setSelectedVariant(found);
-                        }}
-                        className={`px-6 py-3 min-w-[72px] border rounded-md text-base font-medium transition-colors ${selectedSize === s.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-800 border-gray-300'}`}
-                      >
-                        {s.display}
-                      </button>
-                    ))}
+                  <div
+                    className="flex gap-3 mb-3 mt-2"
+                    onClick={(e) => {
+                      if (e.target === e.currentTarget) clearSelection();
+                    }}
+                  >
+                    {sizes.map((s) => {
+                      const available = isSizeAvailable(s.value);
+                      return (
+                        <button
+                          key={s.value}
+                          type="button"
+                          onClick={() => {
+                            if (!available) return;
+                            setSelectedSize(s.value);
+                            const found = findVariantWithSelection(selectedColor, s.value) || findVariantWithSelection(null, s.value);
+                            if (found) {
+                              setSelectedVariant(found);
+                              setSelectedColor(getVariantColor(found) || selectedColor);
+                            } else {
+                              const fallback = findVariantWithSelection(null, s.value);
+                              if (fallback) {
+                                setSelectedVariant(fallback);
+                                setSelectedColor(getVariantColor(fallback) || '');
+                              }
+                            }
+                          }}
+                          disabled={!available}
+                          className={`px-6 py-3 min-w-[72px] border rounded-md text-base font-medium transition-colors ${selectedSize === s.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-800 border-gray-300'} ${available ? '' : 'opacity-40 cursor-not-allowed'}`}
+                        >
+                          {s.display}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -324,9 +444,9 @@ export default function ProductDetailPage() {
             <button
               className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-8 py-3 rounded-md flex-1 md:flex-initial"
               type="button"
-              disabled={addingToCart}
+              disabled={addingToCart || Number(selectedVariant?.stock || 0) <= 0 || !selectedVariant?.id}
               onClick={handleAddToCart}>
-              {addingToCart ? "Đang thêm..." : "Thêm vào giỏ hàng"}
+              {addingToCart ? "Đang thêm..." : (Number(selectedVariant?.stock || 0) <= 0 ? "Hết hàng" : "Thêm vào giỏ hàng")}
             </button>
 
             <button className="border p-3 rounded-md">
@@ -342,8 +462,7 @@ export default function ProductDetailPage() {
       <div className="mt-10">
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div>
-            <h3 className="text-2xl font-semibold mb-3">Đặc điểm nổi bật</h3>
-            <p className="text-base text-on-surface-variant mb-4 text-xl md:text-xl">{product.description}</p>
+            <h2 className="text-3xl mb-4">Mô tả sản phẩm</h2>
             <ul className="list-disc pl-5 space-y-2 ">
               {(product.highlights || [
                 '100% Cotton tự nhiên',

@@ -1,6 +1,3 @@
-/* eslint-disable no-empty */
-/* eslint-disable no-unused-vars */
-/* eslint-disable no-undef */
 import api from "../configs/AxiosConfig";
 
 // derive backend origin from Axios baseURL (strip trailing /api)
@@ -18,19 +15,34 @@ const fallbackProducts = [
 ];
 
 const ProductsService = {
-  async getCategories() {
+  async getCategories(params = {}) {
     try {
-      const res = await api.get("/categories");
-      // Normalize to an array. Backend formats vary: array | { data: [] } | { results: [] }
-      const list = res?.data || res;
-      if (Array.isArray(list)) return list;
-      if (list && Array.isArray(list.data)) return list.data;
-      if (list && Array.isArray(list.items)) return list.items;
-      if (list && Array.isArray(list.results)) return list.results;
+      const res = await api.get("/categories", { params });
+      const payload = res?.data ?? res;
+      if (Array.isArray(payload)) return payload;
+      if (Array.isArray(payload?.data)) return payload.data;
+      if (Array.isArray(payload?.items)) return payload.items;
+      if (Array.isArray(payload?.results)) return payload.results;
+      if (Array.isArray(payload?.data?.items)) return payload.data.items;
       return fallbackCategories;
-    } catch (e) {
+    } catch {
       return fallbackCategories;
     }
+  },
+
+  async createCategory(data) {
+      const response = await api.post("/categories", data);
+      return response?.data?.data ?? response?.data ?? response;
+  },
+
+  async updateCategory(id, data) {
+      const response = await api.put(`/categories/${id}`, data);
+      return response?.data?.data ?? response?.data ?? response;
+  },
+
+  async deleteCategory(id) {
+      const response = await api.delete(`/categories/${id}`);
+      return response?.data?.data ?? response?.data ?? response;
   },
 
   async getAttributes() {
@@ -40,7 +52,7 @@ const ProductsService = {
       // payload may be an array of attributes or { data: [...] }
       const list = Array.isArray(payload) ? payload : payload?.data ?? payload?.items ?? payload?.results ?? [];
       return list;
-    } catch (e) {
+    } catch {
       return [];
     }
   },
@@ -61,10 +73,16 @@ const ProductsService = {
         const id = p.id ?? p._id ?? p.productId ?? null;
         const name = p.name ?? p.title ?? p.productName ?? "Untitled";
         let image = p.image ?? p.thumbnail ?? (Array.isArray(p.images) && p.images[0]) ?? p.avatar ?? (Array.isArray(p.variants) && p.variants[0]?.image) ?? "";
-        const rawPrice = (p.discount_price ?? p.price ?? p.unitPrice ?? p.priceAmount ?? null);
-        const priceNum = rawPrice != null && !isNaN(Number(rawPrice)) ? Number(rawPrice) : null;
-        const price = priceNum ?? null;
-        const priceDisplay = p.priceDisplay ?? (priceNum !== null ? priceNum.toLocaleString("vi-VN") + "đ" : p.displayPrice ?? "");
+        const rawBasePrice = p.price ?? p.unitPrice ?? p.priceAmount ?? p.original_price ?? p.regular_price ?? null;
+        const rawDiscountPrice = p.discount_price ?? null;
+        const rawSalePrice = p.sale_price ?? null;
+        const basePrice = rawBasePrice != null && !isNaN(Number(rawBasePrice)) ? Number(rawBasePrice) : null;
+        const discountAmount = rawDiscountPrice != null && !isNaN(Number(rawDiscountPrice)) ? Number(rawDiscountPrice) : null;
+        const salePrice = rawSalePrice != null && !isNaN(Number(rawSalePrice)) ? Number(rawSalePrice) : null;
+        const normalizedDiscount = salePrice != null && basePrice != null ? Math.max(basePrice - salePrice, 0) : discountAmount;
+        const finalPrice = salePrice != null ? salePrice : (basePrice != null && normalizedDiscount != null ? Math.max(basePrice - normalizedDiscount, 0) : null);
+        const price = basePrice ?? finalPrice ?? null;
+        const priceDisplay = p.priceDisplay ?? (finalPrice != null ? Number(finalPrice).toLocaleString("vi-VN") + "đ" : p.displayPrice ?? "");
         const shortDescription = p.shortDescription ?? p.excerpt ?? p.summary ?? "";
         const description = p.description ?? p.longDescription ?? "";
         const category = typeof p.category === "string" ? p.category : p.category?.name ?? (Array.isArray(p.categories) && p.categories[0]?.name) ?? p.category?.title ?? "";
@@ -74,15 +92,92 @@ const ProductsService = {
           // relative path from API - resolve against backend origin
           image = `${BACKEND_ORIGIN}/${String(image).replace(/^\/+/, "")}`;
         }
-        return { id, name, image, category, price, priceDisplay, shortDescription, description, created_at: p.created_at ?? p.createdAt ?? null };
+        return {
+          id,
+          name,
+          image,
+          category,
+          price,
+          discount_price: normalizedDiscount,
+          priceDisplay,
+          shortDescription,
+          description,
+          stock: p.stock ?? p.available_stock ?? p.quantity ?? p.qty ?? p.inventory ?? null,
+          status: p.status ?? p.state ?? null,
+          variants: Array.isArray(p.variants) ? p.variants : [],
+          created_at: p.created_at ?? p.createdAt ?? null,
+        };
       });
 
       // Do NOT return fallbackProducts when the backend explicitly returns no items.
       // Return an empty array so the UI can show a proper "no results" message.
       return { items: items, pagination };
-    } catch (e) {
+    } catch {
       return { items: fallbackProducts, pagination: null };
     }
+  },
+
+  async getAllProducts(params = {}) {
+    const result = await this.getProducts(params);
+    return {
+      success: true,
+      data: result,
+      status: 200,
+    };
+  },
+
+  async getProductById(id) {
+    return this.getProduct(id);
+  },
+
+  async createProduct(data) {
+    try {
+      const response = await api.post("/products", data);
+      const payload = response?.data?.data ?? response?.data ?? response;
+      return {
+        success: true,
+        data: payload,
+        status: response?.status ?? 201,
+      };
+    } catch (error) {
+      console.error('ProductsService.createProduct error:', error.response?.data || error.message);
+      throw error;
+    }
+  },
+
+  async updateProduct(id, data) {
+    const response = await api.put(`/products/${id}`, data);
+    const payload = response?.data?.data ?? response?.data ?? response;
+    return {
+      success: true,
+      data: payload,
+      status: response?.status ?? 200,
+    };
+  },
+
+  async deleteProduct(id) {
+    const response = await api.delete(`/products/${id}`);
+    return {
+      success: true,
+      data: response?.data?.data ?? response?.data ?? null,
+      status: response?.status ?? 200,
+    };
+  },
+
+  async uploadImage(file) {
+    const formData = new FormData();
+    formData.append("image", file);
+    const response = await api.post("/upload", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    });
+    const payload = response?.data?.data ?? response?.data ?? response;
+    return {
+      success: true,
+      data: payload,
+      status: response?.status ?? 200,
+    };
   },
 
   async getFeaturedProducts() {
@@ -108,11 +203,16 @@ const ProductsService = {
           (Array.isArray(p.variants) && p.variants[0]?.image) ??
           "";
 
-        // Prefer discount_price when available
-        const rawPrice = (p.discount_price ?? p.price ?? p.unitPrice ?? p.priceAmount ?? null);
-        const priceNum = rawPrice != null && !isNaN(Number(rawPrice)) ? Number(rawPrice) : null;
-        const price = priceNum ?? null;
-        const priceDisplay = p.priceDisplay ?? (priceNum !== null ? priceNum.toLocaleString("vi-VN") + "đ" : p.displayPrice ?? "");
+        const rawBasePrice = p.price ?? p.unitPrice ?? p.priceAmount ?? p.original_price ?? p.regular_price ?? null;
+        const rawDiscountPrice = p.discount_price ?? null;
+        const rawSalePrice = p.sale_price ?? null;
+        const basePrice = rawBasePrice != null && !isNaN(Number(rawBasePrice)) ? Number(rawBasePrice) : null;
+        const discountAmount = rawDiscountPrice != null && !isNaN(Number(rawDiscountPrice)) ? Number(rawDiscountPrice) : null;
+        const salePrice = rawSalePrice != null && !isNaN(Number(rawSalePrice)) ? Number(rawSalePrice) : null;
+        const normalizedDiscount = salePrice != null && basePrice != null ? Math.max(basePrice - salePrice, 0) : discountAmount;
+        const finalPrice = salePrice != null ? salePrice : (basePrice != null && normalizedDiscount != null ? Math.max(basePrice - normalizedDiscount, 0) : null);
+        const price = basePrice ?? finalPrice ?? null;
+        const priceDisplay = p.priceDisplay ?? (finalPrice != null ? Number(finalPrice).toLocaleString("vi-VN") + "đ" : p.displayPrice ?? "");
         const shortDescription = p.shortDescription ?? p.excerpt ?? p.summary ?? "";
         const description = p.description ?? p.longDescription ?? "";
         // category can be an object or array from backend
@@ -132,6 +232,7 @@ const ProductsService = {
           image,
           category,
           price,
+          discount_price: normalizedDiscount,
           priceDisplay,
           shortDescription,
           description,
@@ -141,14 +242,8 @@ const ProductsService = {
       // If normalization produced no items, fall back to built-in list
       if (!normalized || normalized.length === 0) return fallbackProducts;
 
-      // Debug: help verify what the UI will receive (appears in browser console)
-      try {
-        // eslint-disable-next-line no-console
-        console.debug("ProductsService.getFeaturedProducts normalized:", normalized);
-      } catch (e) {}
-
       return normalized;
-    } catch (e) {
+    } catch {
       return fallbackProducts;
     }
   },
@@ -177,16 +272,51 @@ const ProductsService = {
       const idVal = p.id ?? p._id ?? p.productId ?? null;
       const name = p.name ?? p.title ?? p.productName ?? "Untitled";
       let image = p.image ?? p.thumbnail ?? (Array.isArray(p.images) && p.images[0]) ?? p.avatar ?? (Array.isArray(p.variants) && p.variants[0]?.image) ?? "";
-      const rawPrice = (p.discount_price ?? p.price ?? p.unitPrice ?? p.priceAmount ?? null);
-      const priceNum = rawPrice != null && !isNaN(Number(rawPrice)) ? Number(rawPrice) : null;
-      const price = priceNum ?? null;
-      const priceDisplay = p.priceDisplay ?? (priceNum !== null ? priceNum.toLocaleString("vi-VN") + "đ" : p.displayPrice ?? "");
+      const rawBasePrice = p.price ?? p.unitPrice ?? p.priceAmount ?? p.original_price ?? p.regular_price ?? null;
+      const rawDiscountPrice = p.discount_price ?? null;
+      const rawSalePrice = p.sale_price ?? null;
+      const basePrice = rawBasePrice != null && !isNaN(Number(rawBasePrice)) ? Number(rawBasePrice) : null;
+      const discountAmount = rawDiscountPrice != null && !isNaN(Number(rawDiscountPrice)) ? Number(rawDiscountPrice) : null;
+      const salePrice = rawSalePrice != null && !isNaN(Number(rawSalePrice)) ? Number(rawSalePrice) : null;
+      const normalizedDiscount = salePrice != null && basePrice != null ? Math.max(basePrice - salePrice, 0) : discountAmount;
+      const finalPrice = salePrice != null ? salePrice : (basePrice != null && normalizedDiscount != null ? Math.max(basePrice - normalizedDiscount, 0) : null);
+      const price = basePrice ?? finalPrice ?? null;
+      const priceDisplay = p.priceDisplay ?? (finalPrice != null ? Number(finalPrice).toLocaleString("vi-VN") + "đ" : p.displayPrice ?? "");
       const description = p.description ?? p.longDescription ?? p.summary ?? "";
       const rawVariants = Array.isArray(p.variants) ? p.variants : (p.product_variants && Array.isArray(p.product_variants) ? p.product_variants : []);
       const variants = (Array.isArray(rawVariants) ? rawVariants : []).map((v) => {
+        const normalizeNumber = (value) => {
+          if (value === "" || value === null || value === undefined) return null;
+          const num = Number(value);
+          return Number.isFinite(num) ? num : null;
+        };
+
+        const rawVariantBase = v.price ?? v.unitPrice ?? v.priceAmount ?? v.original_price ?? v.regular_price ?? v.list_price ?? null;
+        const rawVariantDiscount = v.discount_price ?? null;
+        const rawVariantSale = v.sale_price ?? null;
+        const variantBasePrice = normalizeNumber(rawVariantBase);
+        const variantDiscountPrice = normalizeNumber(rawVariantDiscount);
+        const variantSalePrice = normalizeNumber(rawVariantSale);
+        const variantNormalizedDiscount =
+          variantSalePrice != null && variantBasePrice != null
+            ? Math.max(variantBasePrice - variantSalePrice, 0)
+            : variantDiscountPrice;
+        const variantFinalPrice =
+          variantSalePrice != null
+            ? variantSalePrice
+            : variantBasePrice != null && variantNormalizedDiscount != null
+            ? Math.max(variantBasePrice - variantNormalizedDiscount, 0)
+            : null;
+
         const vImage = v.image ?? v.thumbnail ?? "";
         const resolvedImage = vImage && !/^https?:\/\//i.test(vImage) ? `${BACKEND_ORIGIN}/${String(vImage).replace(/^\/+/, "")}` : (vImage || null);
-        return { ...v, image: resolvedImage };
+        return {
+          ...v,
+          image: resolvedImage,
+          price: variantBasePrice ?? variantFinalPrice,
+          discount_price: variantNormalizedDiscount,
+          sale_price: variantSalePrice,
+        };
       });
       const categories = Array.isArray(p.categories) ? p.categories : (p.category ? [p.category] : []);
 
@@ -201,13 +331,15 @@ const ProductsService = {
         name,
         image,
         price,
+        discount_price: normalizedDiscount,
         priceDisplay,
         description,
         variants,
         categories,
+        status: p.status ?? p.state ?? 'active',
         created_at: p.created_at ?? p.createdAt ?? null,
       };
-    } catch (e) {
+    } catch {
       return null;
     }
   },

@@ -1,9 +1,15 @@
-/* eslint-disable react-hooks/immutability */
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState, useRef } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import productsService from "../../services/ProductsService";
+
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
+const getCurrentPrice = (price, discount) => {
+  const basePrice = Number(price || 0);
+  const discountAmount = Number(discount || 0);
+  return Math.max(basePrice - discountAmount, 0);
+};
 
 export default function ProductListPage() {
   const [categories, setCategories] = useState([]);
@@ -46,10 +52,11 @@ export default function ProductListPage() {
       setCategory(c);
       setCategoriesSelected([c]);
       setPage(1);
-      loadProducts({ category: c, page: 1 });
+    } else {
+      setCategory("");
+      setCategoriesSelected([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     let mounted = true;
@@ -324,7 +331,20 @@ export default function ProductListPage() {
                         <div className="p-sm text-center">
                           <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">{p.category}</p>
                           <h3 className="font-headline-sm text-headline-sm text-on-surface truncate">{p.name}</h3>
-                          <p className="font-body-md text-body-md font-bold text-primary mt-2">{p.priceDisplay}</p>
+                    {(() => {
+                      const basePrice = Number(p.price ?? p.original_price ?? p.list_price ?? 0);
+                      const discountAmount = Number(p.discount_price ?? 0);
+                      const currentPrice = getCurrentPrice(basePrice, discountAmount);
+                      const hasDiscount = discountAmount > 0 && discountAmount <= basePrice;
+                      return hasDiscount ? (
+                        <div className="mt-2">
+                          <p className="text-on-surface-variant line-through text-sm">{formatCurrency(basePrice)}</p>
+                          <p className="font-body-md text-body-md font-bold text-red-500 mt-1">{formatCurrency(currentPrice)}</p>
+                        </div>
+                      ) : (
+                        <p className="font-body-md text-body-md font-bold text-primary mt-2">{formatCurrency(basePrice)}</p>
+                      );
+                    })()}
                         </div>
                       </Link>
                     ))}

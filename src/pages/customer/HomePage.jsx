@@ -1,8 +1,16 @@
 /* eslint-disable no-unused-vars */
+import { notification } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import productsService from "../../services/ProductsService";
 import Hero from "../../components/Hero";
+
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
+const getCurrentPrice = (price, discount) => {
+  const basePrice = Number(price || 0);
+  const discountAmount = Number(discount || 0);
+  return Math.max(basePrice - discountAmount, 0);
+};
 
 export default function HomePage() {
 	const [hero, setHero] = useState({
@@ -217,7 +225,21 @@ export default function HomePage() {
 										<div className="p-sm text-center">
 											<p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">{p.category}</p>
 											<h3 className="font-headline-sm text-headline-sm text-on-surface truncate">{p.name}</h3>
-											<p className="font-body-md text-body-md font-bold text-primary mt-2">{p.priceDisplay}</p>
+											{(() => {
+                                              const basePrice = Number(p.price ?? p.original_price ?? p.list_price ?? 0);
+                                              const discountAmount = Number(p.discount_price ?? 0);
+                                              const currentPrice = getCurrentPrice(basePrice, discountAmount);
+                                              const hasDiscount = discountAmount > 0 && discountAmount <= basePrice;
+                                              return hasDiscount ? (
+                                                <div className="mt-2">
+                                                  <p className="text-on-surface-variant line-through text-sm">{formatCurrency(basePrice)}</p>
+                                                  <p className="font-body-md text-body-md font-bold text-red-500 mt-1">{formatCurrency(currentPrice)}</p>
+                                                </div>
+                                              ) : (
+                                                <p className="font-body-md text-body-md font-bold text-primary mt-2">{formatCurrency(basePrice)}</p>
+                                              );
+                                            })()}
+
 										</div>
 									</Link>
 								))}
@@ -249,7 +271,11 @@ export default function HomePage() {
 					<div className="max-w-max-width mx-auto px-gutter text-center">
 						<h3 className="font-headline-md text-headline-md text-on-surface mb-sm">Trải nghiệm phong cách LUXE</h3>
 						<p className="font-body-md text-body-md text-on-surface-variant mb-lg  mx-auto">Đăng ký để nhận thông tin về các bộ sưu tập giới hạn và ưu đãi độc quyền sớm nhất.</p>
-						<form className="flex flex-col md:flex-row gap-xs max-w-md mx-auto" onSubmit={(e)=>{e.preventDefault(); alert('Cảm ơn!')}}>
+						<form className="flex flex-col md:flex-row gap-xs max-w-md mx-auto" onSubmit={(e)=>{e.preventDefault(); 
+						notification.success({
+							message: "Đăng ký thành công",
+							description: "Cảm ơn bạn đã đăng ký nhận thông tin!",
+						})}}>
 							<input className="flex-grow bg-white border border-outline-variant rounded-lg px-md py-sm focus:outline-none focus:border-primary transition-colors font-body-sm text-body-sm" placeholder="Email của bạn" type="email" />
 							<button className="bg-primary text-white font-label-md text-label-md px-md py-sm rounded-lg whitespace-nowrap hover:bg-on-primary-fixed-variant transition-colors" type="submit">Đăng ký</button>
 						</form>
