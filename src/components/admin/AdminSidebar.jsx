@@ -1,11 +1,64 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import ConfirmModal from './ConfirmModal';
+import ProfileService from '../../services/ProfileService';
+
+const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
+
+const resolveAvatar = (avatar) => {
+  if (!avatar) return '';
+  if (/^https?:\/\//i.test(avatar)) return avatar;
+  return `${BACKEND_ORIGIN}/${String(avatar).replace(/^\/+/, '')}`;
+};
+
+const getDisplayName = (profile) =>
+  profile?.name ?? profile?.full_name ?? profile?.username ?? profile?.email ?? 'Quản trị viên';
+
+const getInitials = (name) => {
+  const words = String(name || '').trim().split(/\s+/).filter(Boolean);
+  if (words.length === 0) return 'QT';
+  return words.slice(-2).map((word) => word[0]).join('').toUpperCase();
+};
+
+const getRoleLabel = (profile) => {
+  const rawRole = profile?.role ?? profile?.role_name ?? profile?.roles?.[0] ?? Cookies.get('user_role');
+  const role = String(rawRole || '').toUpperCase();
+
+  if (['ROLE_ADMIN', 'ADMIN', 'SUPER_ADMIN', 'SUPERADMIN'].includes(role)) {
+    return 'Quản trị viên';
+  }
+
+  return rawRole || 'Quản trị viên';
+};
 
 const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
   const navigate = useNavigate();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [avatarError, setAvatarError] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    const fetchProfile = async () => {
+      try {
+        const data = await ProfileService.getProfile();
+        if (isMounted) {
+          setProfile(data);
+          setAvatarError(false);
+        }
+      } catch (error) {
+        console.error('Không thể tải thông tin quản trị viên:', error);
+      }
+    };
+
+    fetchProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const menuItems = [
     { id: 'dashboard', label: 'Thống kê', icon: 'dashboard', path: '/admin/dashboard' },
@@ -43,6 +96,10 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
     setIsLogoutModalOpen(false);
   };
 
+  const displayName = getDisplayName(profile);
+  const avatarUrl = resolveAvatar(profile?.avatar);
+  const roleLabel = getRoleLabel(profile);
+
   return (
     <aside className="h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col py-md px-sm z-40">
       {/* Logo Section */}
@@ -71,16 +128,23 @@ const AdminSidebar = ({ activeMenu, setActiveMenu }) => {
       {/* User Profile Section with Logout */}
       <div className="mt-auto space-y-2">
         <div className="p-xs bg-surface-container-low rounded-xl flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant">
-            <img
-              className="w-full h-full object-cover"
-              alt="Thông tin người dùng"
-              src="https://lh3.googleusercontent.com/aida-public/AB6AXuDslQaV_hGIYocLm7U3P9dTXwmXMU6u7eqxr4ysQmrDP7EuhY8w_Sm7hvOBrLIAL8JCAFsZyPhLZ--bs8kTIi2DjslPTlf_IXmpCE3b32-9xm1Flsf9Gflsrt9CbB9f3c_etNNyLmcsoRAo3gFTf1KUf4eGChOlX18ixaoRT_tkwK6EGKhqMHoG7GvikvASzNlIWK539TH3LDcwvI34XbMRURi6_u5QETFbNuauBfrU9vGEdyiVccJUWmASbV031SHRBFha24o5zy_x"
-            />
+          <div className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant shrink-0">
+            {avatarUrl && !avatarError ? (
+              <img
+                className="w-full h-full object-cover"
+                alt={`Ảnh đại diện của ${displayName}`}
+                src={avatarUrl}
+                onError={() => setAvatarError(true)}
+              />
+            ) : (
+              <div className="flex h-full w-full items-center justify-center bg-primary-container text-xs font-bold text-primary">
+                {getInitials(displayName)}
+              </div>
+            )}
           </div>
           <div className="overflow-hidden">
-            <p className="text-label-md font-bold truncate">Quản trị viên</p>
-            <p className="text-label-sm text-on-surface-variant truncate">quản trị viên</p>
+            <p className="text-label-md font-bold truncate" title={displayName}>{displayName}</p>
+            <p className="text-label-sm text-on-surface-variant truncate">{roleLabel}</p>
           </div>
         </div>
 
