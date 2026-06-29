@@ -17,7 +17,7 @@ import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 import AdminProductListPage from "../pages/admin/AdminProductListPage";
 import AdminProductDetailPage from "../pages/admin/AdminProductDetailPage";
 import AdminProductEditPage from "../pages/admin/AdminProductEditPage";
-import AdminCategoryListPage from "../pages/admin/AdminCategoryListPage";
+import AdminCategoryManagementPage from "../pages/admin/AdminCategoryManagementPage";
 import AdminCustomerListPage from "../pages/admin/AdminCustomerListPage";
 import AdminCustomerDetailPage from "../pages/admin/AdminCustomerDetailPage";
 import AdminOrderListPage from "../pages/admin/AdminOrderListPage";
@@ -87,7 +87,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "categories",
-                element: <AdminCategoryListPage />
+                element: <AdminCategoryManagementPage />
             },
             {
                 path: "settings",

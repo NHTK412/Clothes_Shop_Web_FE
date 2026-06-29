@@ -1,4 +1,5 @@
 import api from "../configs/AxiosConfig";
+import CategoryService from "./CategoryService";
 
 // derive backend origin from Axios baseURL (strip trailing /api)
 const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000/api").replace(/\/api\/?$/, "");
@@ -16,6 +17,8 @@ const fallbackProducts = [
 
 const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
 
+// Kept for product normalizers that can opt into the shared pricing shape.
+// eslint-disable-next-line no-unused-vars
 const getPricing = (item = {}) => {
   const firstVariant = Array.isArray(item.variants)
     ? item.variants[0]
@@ -80,32 +83,23 @@ const getFavoriteProductIds = (payload) => new Set(
 const ProductsService = {
   async getCategories(params = {}) {
     try {
-      const res = await api.get("/categories", { params });
-      const payload = res?.data ?? res;
-      if (Array.isArray(payload)) return payload;
-      if (Array.isArray(payload?.data)) return payload.data;
-      if (Array.isArray(payload?.items)) return payload.items;
-      if (Array.isArray(payload?.results)) return payload.results;
-      if (Array.isArray(payload?.data?.items)) return payload.data.items;
-      return fallbackCategories;
+      const result = await CategoryService.getCategories(params);
+      return result.items;
     } catch {
       return fallbackCategories;
     }
   },
 
   async createCategory(data) {
-      const response = await api.post("/categories", data);
-      return response?.data?.data ?? response?.data ?? response;
+      return CategoryService.createCategory(data);
   },
 
   async updateCategory(id, data) {
-      const response = await api.put(`/categories/${id}`, data);
-      return response?.data?.data ?? response?.data ?? response;
+      return CategoryService.updateCategory(id, data);
   },
 
   async deleteCategory(id) {
-      const response = await api.delete(`/categories/${id}`);
-      return response?.data?.data ?? response?.data ?? response;
+      return CategoryService.deleteCategory(id);
   },
 
   async getAttributes() {
@@ -429,4 +423,3 @@ const ProductsService = {
 };
 
 export default ProductsService;
-
