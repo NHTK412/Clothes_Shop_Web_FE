@@ -32,7 +32,7 @@ const getRoleLabel = (profile) => {
   return rawRole || 'Quản trị viên';
 };
 
-const AdminSidebar = () => {
+const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -75,6 +75,7 @@ const AdminSidebar = () => {
 
   const handleMenuClick = (item) => {
     navigate(item.path);
+    onClose();
   };
 
   const handleLogoutClick = () => {
@@ -105,33 +106,53 @@ const AdminSidebar = () => {
   const activeMenu = pathname.split('/')[2] || 'dashboard';
 
   return (
-    <aside className="h-screen w-64 fixed left-0 top-0 bg-surface-container-lowest border-r border-outline-variant flex flex-col py-md px-sm z-40">
+    <aside
+      className={`fixed left-0 top-0 z-50 flex h-dvh w-72 flex-col border-r border-outline-variant bg-surface-container-lowest px-3 py-4 shadow-2xl transition-transform duration-200 md:z-40 md:w-20 md:translate-x-0 md:px-2 md:shadow-none lg:w-64 lg:px-4 ${
+        isOpen ? 'translate-x-0' : '-translate-x-full'
+      }`}
+    >
       {/* Logo Section */}
-      <div className="mb-lg px-xs">
-        <h1 className="font-headline-sm text-headline-sm font-bold text-primary">Clothes Shop</h1>
-        <p className="text-label-sm text-on-surface-variant uppercase tracking-widest mt-1">Hệ thống quản trị</p>
+      <div className="mb-5 flex min-h-12 items-center justify-between px-2 md:justify-center lg:justify-start">
+        <div className="min-w-0">
+          <h1 className="truncate font-headline-sm text-headline-sm font-bold text-primary">
+            <span className="md:hidden lg:inline">Clothes Shop</span>
+            <span className="hidden md:inline lg:hidden">CS</span>
+          </h1>
+          <p className="mt-1 text-label-sm uppercase tracking-widest text-on-surface-variant md:hidden lg:block">
+            Hệ thống quản trị
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Đóng menu"
+          className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-surface-container md:hidden"
+        >
+          <span className="material-symbols-outlined">close</span>
+        </button>
       </div>
 
       {/* Navigation Menu */}
-      <nav className="flex-1 space-y-1">
+      <nav className="min-h-0 flex-1 space-y-1 overflow-y-auto overflow-x-hidden">
         {menuItems.map((item) => (
           <button
             key={item.id}
             onClick={() => handleMenuClick(item)}
-            className={`w-full flex items-center gap-3 px-xs py-3 rounded transition-all text-left ${activeMenu === item.id
-                ? 'text-primary font-bold border-r-4 border-primary bg-secondary-container'
+            title={item.label}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-all md:justify-center md:px-0 lg:justify-start lg:px-3 ${activeMenu === item.id
+                ? 'bg-secondary-container font-bold text-primary md:ring-1 md:ring-primary/10 lg:border-r-4 lg:border-primary lg:ring-0'
                 : 'text-on-surface-variant hover:bg-surface-container'
               }`}
           >
-            <span className="material-symbols-outlined">{item.icon}</span>
-            <span className="font-label-md text-label-md">{item.label}</span>
+            <span className="material-symbols-outlined shrink-0">{item.icon}</span>
+            <span className="truncate font-label-md text-label-md md:hidden lg:block">{item.label}</span>
           </button>
         ))}
       </nav>
 
       {/* User Profile Section with Logout */}
-      <div className="mt-auto space-y-2">
-        <div className="p-xs bg-surface-container-low rounded-xl flex items-center gap-3">
+      <div className="mt-3 space-y-2 border-t border-outline-variant pt-3">
+        <div className="flex items-center gap-3 rounded-xl bg-surface-container-low p-2 md:justify-center lg:justify-start">
           <div className="w-10 h-10 rounded-full overflow-hidden border border-outline-variant shrink-0">
             {avatarUrl && !avatarError ? (
               <img
@@ -146,7 +167,7 @@ const AdminSidebar = () => {
               </div>
             )}
           </div>
-          <div className="overflow-hidden">
+          <div className="overflow-hidden md:hidden lg:block">
             <p className="text-label-md font-bold truncate" title={displayName}>{displayName}</p>
             <p className="text-label-sm text-on-surface-variant truncate">{roleLabel}</p>
           </div>
@@ -155,10 +176,11 @@ const AdminSidebar = () => {
         {/* Logout Button */}
         <button
           onClick={handleLogoutClick}
-          className="w-full flex items-center gap-3 px-xs py-3 rounded transition-all text-left text-error hover:bg-error-container/20 font-label-md"
+          title="Đăng xuất"
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left font-label-md text-error transition-all hover:bg-error-container/20 md:justify-center md:px-0 lg:justify-start lg:px-3"
         >
           <span className="material-symbols-outlined">logout</span>
-          <span>Đăng xuất</span>
+          <span className="md:hidden lg:inline">Đăng xuất</span>
         </button>
       </div>
 

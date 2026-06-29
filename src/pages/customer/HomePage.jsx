@@ -168,7 +168,7 @@ export default function HomePage() {
 					<div className="flex flex-col md:flex-row gap-gutter h-auto md:h-[600px]">
 						{Array.isArray(categories) && categories.length >= 3 ? (
 							<>
-								<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+								<div className="group relative min-h-[300px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 									<img alt={categories[0].name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={categories[0].image} />
 									<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
 										<div className="text-white">
@@ -178,7 +178,7 @@ export default function HomePage() {
 									</div>
 								</div>
 								<div className="flex-1 flex flex-col gap-gutter">
-									<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+									<div className="group relative min-h-[260px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 										<img alt={categories[1].name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={categories[1].image} />
 										<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
 											<div className="text-white">
@@ -187,7 +187,7 @@ export default function HomePage() {
 											</div>
 										</div>
 									</div>
-									<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+									<div className="group relative min-h-[260px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 										<img alt={categories[2].name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={categories[2].image} />
 										<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
 											<div className="text-white">
@@ -200,7 +200,7 @@ export default function HomePage() {
 							</>
 						) : (
 							<>
-								<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+								<div className="group relative min-h-[300px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 									<img alt="Thời trang Nữ" className="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1jv8UoPjv77YvFoh_lCRlH_8qFxfWxaocWQBEQzpNsPqfwI98JQnuSUt3k7rnTXwXH6RALIoo-ex59wJ5k_0i4cZ4QblXYqBhl3d1wla8i1JA_8w4rR31kNSlf97AGMyOSqYfbHSR4GTUMkhBytKV_xbS0Jkra-1N4aam_L_F2wSP9fqmJWzQ1nWcnM_vScMXNpUv39HvPvNPBYbJgKRt3Nt63ZZqY3hcVuCiYgB1Wl70wMctZB17quwcgDuv-qx0ZVOKnAIVj1n_" />
 									<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-end items-end p-lg">
 										<div className="text-white">
@@ -210,7 +210,7 @@ export default function HomePage() {
 									</div>
 								</div>
 								<div className="flex-1 flex flex-col gap-gutter">
-									<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+									<div className="group relative min-h-[260px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 										<img alt="Thời trang Nam" className="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAB0Fx_N6pWcosOr-o9AOiOnwQPdMt5WDluWBKP9tkuusswuxU7n_97Jk511_jua128yH-OS4-O0z8RhGkck69I9SR3m4amucFplfO-CEehDJHpc0LTj3HeIXl9ZdeC9yQM1kOeAYB28s_u6vmX6FE38Weam_qw8S3zB1weps7hW1xAAz4NDcIFFfOZBTH__c6Wc0lrABrWlr4RAoWrpHcJzheA7ck4QteH8h-QjM5FOZPYMGrJzkR9DqR34FSETlrn5BqPBrlHfmHT" />
 										<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
 											<div className="text-white">
@@ -219,7 +219,7 @@ export default function HomePage() {
 											</div>
 										</div>
 									</div>
-									<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+									<div className="group relative min-h-[260px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 										<img alt="Phụ kiện" className="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7kfP8hxwhqvWPl3eBUB0w61PYth9HLbyrJXJiHE8sJp56HeCus2HhSu42DFKV3qzb8Puswb8JRx7InKVC5DT7ZQ1kif-uMwBLbSoOQj21Z0S2VwSOKi-NDxsgeBJePGzeCx-8pNihSBwCpwHBOKQb0lR_boxueooJtEMrZk9w0BC3kBjdkRp4GB67YlGlOSQcd0dk3bKDarJzeo5RoQ8N5XMd83e2dUnz0UgEUypK6FXkbMc-yRjFeGDsruvQ4hoAwU56oAwEQpH1" />
 										<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
 											<div className="text-white">
@@ -280,12 +280,12 @@ export default function HomePage() {
 				{promotion && promotionCountdown && (
 					<section className="py-xl">
 						<div className="max-w-max-width mx-auto px-gutter">
-							<div className="relative w-full h-[400px] rounded-2xl overflow-hidden bg-primary-container">
+							<div className="relative min-h-[520px] w-full overflow-hidden rounded-2xl bg-primary-container sm:min-h-[440px]">
 								<div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-md text-white">
 									<p className="mb-xs font-label-md uppercase tracking-[0.2em] text-white/80">
 										{promotionCountdown.phase === "upcoming" ? "Sắp diễn ra" : "Đang diễn ra"}
 									</p>
-									<h2 className="font-display-lg text-display-lg mb-sm">
+									<h2 className="mb-sm text-3xl font-bold sm:text-4xl lg:text-5xl">
 										{promotion.name || "Chương trình khuyến mãi"}
 									</h2>
 									<p className="font-body-lg text-body-lg mb-sm opacity-90 max-w-2xl">
@@ -300,7 +300,7 @@ export default function HomePage() {
 											? "Chương trình bắt đầu sau"
 											: "Chương trình kết thúc sau"}
 									</p>
-									<div className="flex gap-sm">
+									<div className="grid grid-cols-2 gap-2 sm:flex sm:gap-sm">
 										{[
 											["Ngày", promotionCountdown.days],
 											["Giờ", promotionCountdown.hours],
@@ -309,7 +309,7 @@ export default function HomePage() {
 										].map(([label, value]) => (
 											<div
 												key={label}
-												className="min-w-16 bg-white/20 backdrop-blur-md px-md py-sm rounded-lg border border-white/30"
+												className="min-w-16 rounded-lg border border-white/30 bg-white/20 px-sm py-sm backdrop-blur-md sm:px-md"
 											>
 												<span className="font-headline-md text-headline-md block">
 													{String(value).padStart(2, "0")}

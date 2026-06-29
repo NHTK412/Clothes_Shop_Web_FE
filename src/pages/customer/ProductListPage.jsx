@@ -15,6 +15,7 @@ const getCurrentPrice = (price, discount) => {
 };
 
 export default function ProductListPage() {
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [sizeOptions, setSizeOptions] = useState([]);
@@ -252,8 +253,21 @@ export default function ProductListPage() {
 
   return (
     <div className="max-w-max-width mx-auto px-gutter py-xl">
+      <button
+        type="button"
+        onClick={() => setFiltersOpen((value) => !value)}
+        className="mb-4 flex w-full items-center justify-between rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 font-medium md:hidden"
+      >
+        <span className="flex items-center gap-2">
+          <span className="material-symbols-outlined">tune</span>
+          Bộ lọc sản phẩm
+        </span>
+        <span className="material-symbols-outlined">
+          {filtersOpen ? "expand_less" : "expand_more"}
+        </span>
+      </button>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-lg">
-        <aside className="col-span-1">
+        <aside className={`${filtersOpen ? "block" : "hidden"} md:col-span-1 md:block`}>
           <div className="mb-md mt-6">
             <h3 className="font-headline-md text-headline-md mb-2">Filters</h3>
             <div className="bg-surface-container p-md rounded-lg">
@@ -390,8 +404,8 @@ export default function ProductListPage() {
           </div>
         </aside>
 
-        <section className="col-span-3">
-          <div className="flex justify-between items-center mb-lg">
+        <section className="md:col-span-3">
+          <div className="mb-lg flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="font-headline-md">Sản phẩm</h2>
             <div className="flex items-center gap-sm">
               <label className="font-label-sm mr-2">Sort</label>

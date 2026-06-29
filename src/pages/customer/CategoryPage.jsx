@@ -82,13 +82,13 @@ const CategoryPage = () => {
   return (
     <main className="bg-surface-container-lowest text-on-surface">
       <section className="py-10">
-        <div className="mx-auto max-w-[1280px] px-6">
+        <div className="mx-auto max-w-[1280px] px-4 sm:px-6">
           <div className="grid gap-8 lg:grid-cols-[1.3fr_0.7fr]">
-            <div className="rounded-[32px] border border-outline-variant bg-surface-container-high p-8 shadow-sm">
+            <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-5 shadow-sm sm:rounded-[32px] sm:p-8">
               <span className="inline-flex items-center rounded-full bg-primary/10 px-4 py-2 text-sm font-semibold text-primary">
                 Khám phá các danh mục mới
               </span>
-              <h1 className="mt-6 text-display-lg font-semibold tracking-tight text-on-surface">
+              <h1 className="mt-5 text-3xl font-semibold tracking-tight text-on-surface sm:mt-6 sm:text-4xl lg:text-5xl">
                 Tìm sản phẩm phù hợp với phong cách của bạn.
               </h1>
               <p className="mt-4 max-w-2xl text-body-lg leading-8 text-secondary">
@@ -122,7 +122,7 @@ const CategoryPage = () => {
                     style={{ backgroundImage: `url('${category.image}')` }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-surface-container-high via-transparent to-transparent opacity-95" />
-                  <div className="relative flex h-full flex-col justify-end p-8">
+                  <div className="relative flex h-full flex-col justify-end p-5 sm:p-8">
                     <span className="mb-4 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
                       {category.name}
                     </span>
@@ -152,7 +152,7 @@ const CategoryPage = () => {
                     style={{ backgroundImage: `url('${category.image}')` }}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-surface-container-high via-transparent to-transparent opacity-95" />
-                  <div className="relative flex h-full flex-col justify-end p-8">
+                  <div className="relative flex h-full flex-col justify-end p-5 sm:p-8">
                     <span className="mb-4 inline-flex rounded-full bg-primary/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary">
                       {category.name}
                     </span>
@@ -168,7 +168,7 @@ const CategoryPage = () => {
               ))}
             </div>
 
-            <div className="rounded-[32px] border border-outline-variant bg-surface-container-high p-8 shadow-sm">
+            <div className="rounded-2xl border border-outline-variant bg-surface-container-high p-5 shadow-sm sm:rounded-[32px] sm:p-8">
               <span className="inline-flex items-center rounded-full bg-background px-4 py-2 text-sm font-semibold text-primary">
                 Danh mục nổi bật
               </span>
@@ -192,7 +192,7 @@ const CategoryPage = () => {
             </div>
           </div>
 
-          <div className="rounded-[32px] border border-outline-variant bg-surface-container-high p-8 shadow-sm mt-8">
+          <div className="mt-8 rounded-2xl border border-outline-variant bg-surface-container-high p-5 shadow-sm sm:rounded-[32px] sm:p-8">
             <div className="flex flex-wrap items-center justify-between gap-6">
               <div>
                 <p className="text-sm font-semibold uppercase tracking-[0.24em] text-primary/80">Danh sách danh mục</p>

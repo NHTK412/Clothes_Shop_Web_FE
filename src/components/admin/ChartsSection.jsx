@@ -13,8 +13,8 @@ const RevenueTrend = ({ revenueData = [] }) => {
           <span className="text-label-sm">Theo tháng</span>
         </div>
       </div>
-      <div className="bg-surface-variant/30 rounded-lg p-4">
-        <div style={{ height: `${chartHeight}px` }} className="flex items-end justify-between gap-3 px-2">
+      <div className="overflow-x-auto rounded-lg bg-surface-variant/30 p-3 sm:p-4">
+        <div style={{ height: `${chartHeight}px` }} className="flex min-w-[620px] items-end justify-between gap-3 px-2">
           {values.map((item, index) => {
             const numValue = Number(item.total || 0);
             const barHeight = maxValue > 0 ? Math.max((numValue / maxValue) * chartHeight * 0.85, 8) : 8;

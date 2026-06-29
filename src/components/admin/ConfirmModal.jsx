@@ -3,7 +3,7 @@ const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-2xl" style={{ minWidth: '360px', maxWidth: '480px' }}>
+      <div className="w-full max-w-[480px] overflow-hidden rounded-xl bg-white shadow-2xl">
         {/* Header */}
         <div className="border-b border-gray-200 px-6 py-4 bg-gray-50">
           <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
@@ -15,7 +15,7 @@ const ConfirmModal = ({ isOpen, title, message, onConfirm, onCancel, confirmText
         </div>
 
         {/* Footer */}
-        <div className="border-t border-gray-200 px-6 py-4 bg-gray-50 flex gap-3 justify-end">
+        <div className="flex flex-col-reverse gap-3 border-t border-gray-200 bg-gray-50 px-4 py-4 sm:flex-row sm:justify-end sm:px-6">
           <button
             onClick={onCancel}
             className="px-5 py-2 rounded-lg border-2 border-gray-300 text-gray-700 font-medium hover:bg-gray-100 transition-colors"

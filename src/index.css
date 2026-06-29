@@ -1,5 +1,15 @@
 @import "tailwindcss";
 
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
 
 @theme {
     --color-inverse-primary: #b7c4ff;
@@ -125,4 +135,84 @@
     font-size: 18px;
     line-height: 28px;
     font-weight: 400;
+}
+
+/* Admin responsive shell: phone < 768px, tablet 768-1023px, laptop >= 1024px */
+.admin-shell-content {
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+.admin-shell-content table:not([class*="min-w-"]) {
+    min-width: 720px;
+}
+
+@media (max-width: 767px) {
+    .admin-shell-content main > div {
+        padding: 1rem !important;
+    }
+
+    .admin-shell-content .p-lg {
+        padding: 1rem;
+    }
+
+    .admin-shell-content .gap-gutter {
+        gap: 1rem;
+    }
+
+    .admin-shell-content button,
+    .admin-shell-content select {
+        min-height: 40px;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .admin-shell-content main > div {
+        padding: 1.5rem !important;
+    }
+
+    .admin-shell-content .p-lg {
+        padding: 1.5rem;
+    }
+}
+
+.client-shell-content {
+    min-width: 0;
+    overflow-x: hidden;
+}
+
+@media (max-width: 767px) {
+    .client-shell-content .px-gutter {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+
+    .client-shell-content .p-lg {
+        padding: 1rem;
+    }
+
+    .client-shell-content .gap-gutter {
+        gap: 1rem;
+    }
+
+    .client-shell-content .py-xl {
+        padding-top: 2.5rem;
+        padding-bottom: 2.5rem;
+    }
+
+    .client-shell-content button,
+    .client-shell-content select {
+        min-height: 40px;
+    }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+    .client-shell-content .px-gutter {
+        padding-left: 1.5rem;
+        padding-right: 1.5rem;
+    }
+
+    .client-shell-content .gap-gutter {
+        gap: 1.5rem;
+    }
 }

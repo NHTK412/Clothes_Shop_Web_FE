@@ -137,22 +137,22 @@ const AdminProductDetailPage = () => {
                 <h1 className="font-headline-md text-headline-md text-on-background">Chi tiết sản phẩm</h1>
                 <p className="font-body-sm text-body-sm text-on-surface-variant">Xem và quản lý thông tin sản phẩm.</p>
               </div>
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
                 <button
                   onClick={() => navigate('/admin/products')}
-                  className="rounded-lg px-lg py-sm bg-surface text-on-surface border border-outline hover:bg-surface-container transition"
+                  className="w-full rounded-lg border border-outline bg-surface px-lg py-sm text-on-surface transition hover:bg-surface-container sm:w-auto"
                 >
                   Quay lại danh sách
                 </button>
                 <button
                   onClick={() => navigate(`/admin/products/${id}/edit`)}
-                  className="rounded-lg px-lg py-sm bg-primary text-on-primary hover:bg-primary-container transition"
+                  className="w-full rounded-lg bg-primary px-lg py-sm text-on-primary transition hover:bg-primary-container sm:w-auto"
                 >
                   Chỉnh sửa
                 </button>
                 <button
                   onClick={handleDelete}
-                  className="rounded-lg px-lg py-sm bg-error text-on-error hover:bg-error-container transition"
+                  className="w-full rounded-lg bg-error px-lg py-sm text-on-error transition hover:bg-error-container sm:w-auto"
                 >
                   Xóa
                 </button>
@@ -176,7 +176,7 @@ const AdminProductDetailPage = () => {
             ) : product ? (
               <div className="rounded-3xl bg-surface-container-lowest border border-outline-variant p-lg space-y-lg">
                 <div className="grid gap-lg lg:grid-cols-2">
-                  <div className="rounded-3xl overflow-hidden border border-outline-variant bg-surface-container h-105 md:h-105">
+                  <div className="h-72 overflow-hidden rounded-3xl border border-outline-variant bg-surface-container sm:h-96 lg:h-105">
                     <img
                       alt={product.name}
                       src={product.image}

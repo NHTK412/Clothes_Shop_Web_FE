@@ -12,11 +12,6 @@ const normalizeCustomerEmail = (customer) => {
   return customer.email ?? customer.email_address ?? customer.username ?? '-';
 };
 
-const normalizeCustomerPhone = (customer) => {
-  if (!customer) return '-';
-  return customer.phone ?? customer.phone_number ?? customer.mobile ?? '-';
-};
-
 const formatMoney = (value) => {
   if (value == null || value === '') return '-';
   const amount = Number(value);
@@ -26,12 +21,6 @@ const formatMoney = (value) => {
     currency: 'VND',
     maximumFractionDigits: 0,
   }).format(amount);
-};
-
-const normalizeCreatedAt = (customer) => {
-  const date = customer?.created_at ?? customer?.createdAt ?? customer?.created ?? customer?.createdAt;
-  if (!date) return '-';
-  return new Date(date).toLocaleDateString('vi-VN');
 };
 
 const AdminCustomerListPage = () => {
@@ -74,7 +63,9 @@ const AdminCustomerListPage = () => {
   };
 
   useEffect(() => {
-    fetchCustomers(page, perPage);
+    // Initial API synchronization; later pagination is driven by user actions.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    fetchCustomers(1, 10);
   }, []);
 
   const totalCustomers = pagination?.total ?? customers.length;
@@ -152,17 +143,23 @@ const AdminCustomerListPage = () => {
   return (
     <main className="pt-16 min-h-screen bg-surface">
       <div className="p-lg max-w-[1280px] mx-auto w-full space-y-lg">
-            <div className="flex justify-between items-end">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
                 <h2 className="font-headline-md text-headline-md text-on-background">Quản lý khách hàng</h2>
                 <p className="text-body-md text-secondary mt-1">Tổng cộng {totalCustomers.toLocaleString('vi-VN')} khách hàng trong hệ thống</p>
               </div>
               <div className="flex gap-3">
-                <button className="flex items-center gap-2 px-md py-2 border border-primary text-primary font-label-md rounded-lg hover:bg-secondary-container transition-all">
+                <button className="flex w-full items-center justify-center gap-2 rounded-lg border border-primary px-md py-2 font-label-md text-primary transition-all hover:bg-secondary-container sm:w-auto">
                   <span className="material-symbols-outlined">download</span> Xuất báo cáo
                 </button>
               </div>
             </div>
+
+            {error && (
+              <div className="rounded-lg border border-error/30 bg-error-container/30 px-md py-sm text-sm text-error">
+                {error}
+              </div>
+            )}
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-gutter">
               <div className="bg-surface-container-lowest border border-outline-variant p-md rounded-lg hover:border-primary transition-colors group">

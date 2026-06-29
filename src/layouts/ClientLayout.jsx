@@ -6,7 +6,9 @@ const ClientLayout = () => {
     return (
         <>
             <ClientHeader />
-            <Outlet />
+            <div className="client-shell-content min-w-0">
+                <Outlet />
+            </div>
             <ClientFooter />
         </>
     );

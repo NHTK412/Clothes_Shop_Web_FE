@@ -366,7 +366,7 @@ export default function ProductDetailPage() {
           </div>
         </div>
         <div>
-          <h1 className="text-blue-800 font-headline-lg text-headline-lg mb-md text-4xl md:text-5xl">{product.name}</h1>
+          <h1 className="mb-md text-3xl font-bold leading-tight text-blue-800 sm:text-4xl lg:text-5xl">{product.name}</h1>
 
           {/* Price block: prefer variant price if selected, show original+discount when both available */}
           {(() => {
@@ -383,7 +383,7 @@ export default function ProductDetailPage() {
             if (showBoth) {
               return (
                 <div className="mb-md">
-                  <div className="flex items-baseline gap-3">
+                  <div className="flex flex-wrap items-baseline gap-3">
                     <div className="text-on-surface-variant line-through ">{formatCurrency(originalPrice)}</div>
                     <div className=" text-red-500 font-bold text-3xl md:text-4xl">{formatCurrency(finalPrice)}</div>
                   </div>
@@ -402,7 +402,7 @@ export default function ProductDetailPage() {
 
           <hr className="my-4 border-t border-divider" />
           <h3 className="text-2xl font-semibold mb-3">Mô tả sản phẩm</h3>
-          <p className="text-base text-on-surface-variant mb-4 text-xl md:text-xl">{product.description}</p>
+          <p className="mb-4 text-base leading-7 text-on-surface-variant sm:text-lg">{product.description}</p>
 
           {variants.length > 0 && (
             <div className="space-y-5">
@@ -470,7 +470,7 @@ export default function ProductDetailPage() {
             </div>
           )}
 
-          <div className="flex items-center gap-4 mt-7">
+          <div className="mt-7 flex flex-wrap items-center gap-3 sm:gap-4">
             <div className="flex items-center border rounded-md overflow-hidden">
               <button
                 onClick={() => setQuantity((q) => Math.max(1, q - 1))}
@@ -488,7 +488,7 @@ export default function ProductDetailPage() {
             </div>
 
             <button
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-8 py-3 rounded-md flex-1 md:flex-initial"
+              className="order-3 w-full rounded-md bg-blue-600 px-8 py-3 text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400 sm:order-none sm:w-auto sm:flex-1 md:flex-initial"
               type="button"
               disabled={addingToCart || Number(selectedVariant?.stock || 0) <= 0 || !selectedVariant?.id}
               onClick={handleAddToCart}>
@@ -516,12 +516,12 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
-    <hr className="m-10 border-t border-divider" />
+    <hr className="my-8 border-t border-divider sm:my-10" />
       {/* Product description / highlights section moved below add-to-cart area */}
       <div className="mt-10">
         <div className="mt-6 grid grid-cols-1 md:grid-cols-2 gap-6 items-start">
           <div>
-            <h2 className="text-3xl mb-4">Mô tả sản phẩm</h2>
+            <h2 className="mb-4 text-2xl sm:text-3xl">Mô tả sản phẩm</h2>
             <ul className="list-disc pl-5 space-y-2 ">
               {(product.highlights || [
                 '100% Cotton tự nhiên',

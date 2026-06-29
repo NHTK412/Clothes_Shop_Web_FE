@@ -9,7 +9,7 @@ const PageHeader = ({
   return (
     <section className="flex flex-col md:flex-row md:items-end justify-between gap-md">
       <div>
-        <h2 className="font-display-lg md:font-headline-md text-on-surface font-bold">{title}</h2>
+        <h2 className="text-2xl font-bold text-on-surface sm:text-3xl lg:text-4xl">{title}</h2>
         <p className="text-on-surface-variant font-body-sm">{subtitle}</p>
       </div>
       {showTimeRange && (

@@ -199,11 +199,11 @@ const AdminOrderDetailPage = () => {
                   {order?.ghn_order_code ? ` · Mã vận đơn GHN: ${order.ghn_order_code}` : ''}
                 </p>
               </div>
-              <div className="flex gap-2">
-                <Link to="/admin/orders" className="px-md py-2 border border-primary text-primary rounded-lg hover:bg-secondary-container transition-all">
+              <div className="flex w-full gap-2 md:w-auto">
+                <Link to="/admin/orders" className="flex-1 rounded-lg border border-primary px-md py-2 text-center text-primary transition-all hover:bg-secondary-container md:flex-none">
                   Quay lại
                 </Link>
-                <button className="flex items-center gap-2 bg-primary text-on-primary px-md py-2 rounded-lg hover:opacity-90 transition-all">
+                <button className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-primary px-md py-2 text-on-primary transition-all hover:opacity-90 md:flex-none">
                   <span className="material-symbols-outlined">print</span>
                   In hóa đơn
                 </button>
@@ -223,7 +223,7 @@ const AdminOrderDetailPage = () => {
             ) : (
               <>
                 <div className="bg-surface-container-lowest border border-outline-variant rounded-xl p-md">
-                  <div className="flex flex-wrap justify-center items-center gap-6 relative min-h-[120px]">
+                  <div className="relative flex min-h-[120px] flex-col items-center justify-center gap-3 sm:flex-row sm:flex-wrap sm:gap-6">
                     {timelineSteps.map((step, index) => (
                       <React.Fragment key={step.key}>
                         <div className="relative flex flex-col items-center z-10 bg-surface-container-lowest px-xs">
@@ -236,7 +236,7 @@ const AdminOrderDetailPage = () => {
                           </p>
                         </div>
                         {index < timelineSteps.length - 1 && (
-                          <div className="self-center h-1 w-24 rounded-full bg-black" />
+                          <div className="h-8 w-1 self-center rounded-full bg-black sm:h-1 sm:w-24" />
                         )}
                       </React.Fragment>
                     ))}

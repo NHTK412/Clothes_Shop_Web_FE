@@ -209,8 +209,8 @@ const AddressSelectionModal = ({ open, selectedAddressId, onClose, onSelect }) =
     if (!open) return null;
 
     return (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/55 px-sm py-md backdrop-blur-sm">
-            <div className="flex max-h-[92vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg bg-surface-container-lowest shadow-2xl">
+        <div className="fixed inset-0 z-[100] flex items-end justify-center bg-black/55 px-0 pt-md backdrop-blur-sm sm:items-center sm:px-sm sm:py-md">
+            <div className="flex max-h-[94dvh] w-full max-w-3xl flex-col overflow-hidden rounded-t-2xl bg-surface-container-lowest shadow-2xl sm:max-h-[92vh] sm:rounded-lg">
                 <div className="flex items-start justify-between gap-sm border-b border-outline-variant px-md py-md">
                     <div>
                         <h2 className="font-headline-md text-headline-md text-on-surface">Địa chỉ giao hàng</h2>

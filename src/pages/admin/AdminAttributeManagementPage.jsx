@@ -386,8 +386,8 @@ const AdminAttributeManagementPage = () => {
           ))}
         </section>
 
-        <section className="grid min-h-[560px] overflow-hidden rounded-xl border border-outline-variant bg-white lg:grid-cols-[330px_1fr]">
-          <aside className="border-b border-outline-variant lg:border-b-0 lg:border-r">
+        <section className="grid min-h-[560px] overflow-hidden rounded-xl border border-outline-variant bg-white md:grid-cols-[260px_1fr] lg:grid-cols-[330px_1fr]">
+          <aside className="border-b border-outline-variant md:border-b-0 md:border-r">
             <div className="border-b border-outline-variant p-md">
               <div className="relative">
                 <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-[19px] text-outline">search</span>
@@ -400,7 +400,7 @@ const AdminAttributeManagementPage = () => {
               </div>
             </div>
 
-            <div className="max-h-[600px] overflow-y-auto p-2">
+            <div className="max-h-72 overflow-y-auto p-2 md:max-h-[600px]">
               {loading ? (
                 <div className="py-xl text-center"><Spin /></div>
               ) : filteredAttributes.length === 0 ? (
