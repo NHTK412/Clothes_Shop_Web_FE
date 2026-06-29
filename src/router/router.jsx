@@ -5,6 +5,7 @@ import RegisterPage from "../pages/auth/RegisterPage";
 import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import PublicRouter from "./PublicRouter";
 import CustomerRouter from "./CustomerRouter";
+import AdminRouter from "./AdminRouter";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 import HomePage from "../pages/customer/HomePage";
 import ProductListPage from "../pages/customer/ProductListPage";
@@ -34,7 +35,11 @@ import FavoriteProductsPage from "../pages/customer/FavoriteProductsPage";
 const router = createBrowserRouter([
     {
         path: "/admin",
-        element: <AdminLayout />,
+        element: (
+            <AdminRouter>
+                <AdminLayout />
+            </AdminRouter>
+        ),
         children: [
             {
                 index: true,
