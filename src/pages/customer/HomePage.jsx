@@ -319,7 +319,7 @@ export default function HomePage() {
 										))}
 									</div>
 									<Link
-										to="/products"
+										to={`/products?promotionId=${promotion.id}`}
 										className="mt-lg bg-white text-primary font-label-md text-label-md px-lg py-sm rounded-lg hover:bg-surface-container transition-all"
 									>
 										Khám phá ngay

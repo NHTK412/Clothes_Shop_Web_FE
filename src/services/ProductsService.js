@@ -80,6 +80,64 @@ const getFavoriteProductIds = (payload) => new Set(
     .map((id) => String(id))
 );
 
+const normalizeProductListParams = (params = {}) => {
+  const normalized = {};
+  const sortMap = {
+    price_asc: "price",
+    price_desc: "-price",
+    newest: "-created_at",
+    oldest: "created_at",
+  };
+
+  if (params.per_page !== undefined) normalized.per_page = Number(params.per_page);
+  if (params.page !== undefined) normalized.page = Number(params.page);
+  if (params.sort) normalized.sort = sortMap[params.sort] ?? params.sort;
+  if (params.category !== undefined && params.category !== "") {
+    normalized.category = String(params.category);
+  }
+  if (params.q) normalized.q = String(params.q).trim();
+  if (params.min_price !== undefined && params.min_price !== "") {
+    normalized.min_price = Number(params.min_price);
+  }
+  if (params.max_price !== undefined && params.max_price !== "") {
+    normalized.max_price = Number(params.max_price);
+  }
+  if (params.in_stock) normalized.in_stock = true;
+  if (params.promotionId !== undefined && params.promotionId !== "") {
+    normalized.promotionId = Number(params.promotionId);
+  }
+
+  const attributeValueIds = Array.isArray(params.attribute_value_ids)
+    ? params.attribute_value_ids
+    : String(params.attribute_value_ids ?? "")
+        .split(",")
+        .filter(Boolean);
+  const validAttributeValueIds = [
+    ...new Set(
+      attributeValueIds
+        .map(Number)
+        .filter((id) => Number.isInteger(id) && id > 0)
+    ),
+  ];
+  if (validAttributeValueIds.length > 0) {
+    normalized.attribute_value_ids = validAttributeValueIds.join(",");
+  }
+
+  if (params.attr && typeof params.attr === "object") {
+    Object.entries(params.attr).forEach(([name, values]) => {
+      const value = Array.isArray(values) ? values.join(",") : String(values ?? "");
+      if (value) normalized[`attr[${name}]`] = value;
+    });
+  }
+  Object.entries(params).forEach(([key, value]) => {
+    if (key.startsWith("attr[") && value !== "" && value !== undefined) {
+      normalized[key] = Array.isArray(value) ? value.join(",") : String(value);
+    }
+  });
+
+  return normalized;
+};
+
 const ProductsService = {
   async getCategories(params = {}) {
     try {
@@ -116,15 +174,15 @@ const ProductsService = {
 
   // Generic products fetch with filters and pagination
   async getProducts(params = {}) {
-    try {
-      const res = await api.get("/products", { params });
-      const payload = res?.data || res;
+      const query = normalizeProductListParams(params);
+      const res = await api.get("/products", { params: query });
+      const payload = res?.data ?? res ?? {};
       // find items and pagination
       const itemsRaw = Array.isArray(payload)
         ? payload
-        : payload?.data ?? payload?.items ?? payload?.results ?? [];
+        : payload?.items ?? payload?.data?.items ?? payload?.results ?? [];
 
-      const pagination = payload?.pagination || payload?.meta || null;
+      const pagination = payload?.pagination ?? payload?.data?.pagination ?? payload?.meta ?? null;
 
       const items = (Array.isArray(itemsRaw) ? itemsRaw : []).map((p) => {
         const id = p.id ?? p._id ?? p.productId ?? null;
@@ -163,15 +221,13 @@ const ProductsService = {
           status: p.status ?? p.state ?? null,
           variants: Array.isArray(p.variants) ? p.variants : [],
           created_at: p.created_at ?? p.createdAt ?? null,
+          isFavorite: getFavoriteState(p),
         };
       });
 
       // Do NOT return fallbackProducts when the backend explicitly returns no items.
       // Return an empty array so the UI can show a proper "no results" message.
       return { items: items, pagination };
-    } catch {
-      return { items: fallbackProducts, pagination: null };
-    }
   },
 
   async getAllProducts(params = {}) {

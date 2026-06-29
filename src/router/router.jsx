@@ -8,10 +8,10 @@ import CustomerRouter from "./CustomerRouter";
 import AdminRouter from "./AdminRouter";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 import HomePage from "../pages/customer/HomePage";
-import ProductListPage from "../pages/customer/ProductListPage";
+import FilteredProductListPage from "../pages/customer/FilteredProductListPage";
 import ProductDetailPage from "../pages/customer/ProductDetailPage";
 import CartDetailPage from "../pages/customer/CartDetailPage";
-import CategoryPage from "../pages/customer/CategoryPage";
+import CustomerCategoryPage from "../pages/customer/CustomerCategoryPage";
 import AdminLayout from "../layouts/AdminLayout";
 import AdminDashboardPage from "../pages/admin/AdminDashboardPage";
 import AdminProductListPage from "../pages/admin/AdminProductListPage";
@@ -114,11 +114,11 @@ const router = createBrowserRouter([
             },
             {
                 path: "products",
-                element: <ProductListPage />
+                element: <FilteredProductListPage />
             },
             {
                 path: "categories",
-                element: <CategoryPage />
+                element: <CustomerCategoryPage />
             },
             {
                 path: "products/:id",
