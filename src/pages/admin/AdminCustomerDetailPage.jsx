@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import PageHeader from '../../components/admin/PageHeader';
 import CustomerService from '../../services/CustomerService';
 import OrderService from '../../services/OrderService';
 
@@ -183,14 +184,18 @@ const AdminCustomerDetailPage = () => {
 
   return (
     <main className="pt-16 min-h-screen bg-surface py-lg">
-      <div className="p-lg max-w-[1280px] mx-auto">
-            <nav className="flex items-center gap-2 text-label-sm text-on-surface-variant mb-md">
-              <Link className="hover:text-primary" to="/admin">Trang chủ</Link>
-              <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-              <Link className="hover:text-primary" to="/admin/customers">Khách hàng</Link>
-              <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-              <span className="text-on-surface font-semibold">Chi tiết khách hàng</span>
-            </nav>
+      <div className="p-lg max-w-[1280px] mx-auto space-y-lg">
+            <PageHeader
+              eyebrow="Quản lý khách hàng"
+              title="Chi tiết khách hàng"
+              subtitle="Xem hồ sơ, lịch sử mua hàng và thống kê của khách hàng."
+              actions={<Link
+                className="rounded-lg border border-primary px-md py-2 text-center text-primary transition-all hover:bg-secondary-container"
+                to="/admin/customers"
+              >
+                Quay lại danh sách
+              </Link>}
+            />
 
             {loading ? (
               <div className="rounded-3xl border border-outline-variant bg-surface-container p-md text-center text-on-surface-variant">

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Spin, Upload, notification } from 'antd';
 import ConfirmModal from '../../components/admin/ConfirmModal';
+import PageHeader from '../../components/admin/PageHeader';
 import CategoryService from '../../services/CategoryService';
 import UploadService from '../../services/UploadService';
 
@@ -254,32 +255,38 @@ const AdminCategoryManagementPage = () => {
   const previewImage = formData.imagePreview || formData.currentImage;
   const deleteTargetChildren = deleteTarget
     ? categories.filter(
-        (category) => String(category.parent_id) === String(deleteTarget.id)
-      ).length
+      (category) => String(category.parent_id) === String(deleteTarget.id)
+    ).length
     : 0;
 
   return (
     <main className="min-h-screen bg-surface pt-16">
       <div className="mx-auto max-w-[1280px] space-y-lg p-lg">
-        <header className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <p className="mb-1 text-sm font-medium text-primary">Sản phẩm &amp; nội dung</p>
-            <h1 className="font-headline-md text-headline-md text-on-background">
-              Quản lý danh mục
-            </h1>
-            <p className="mt-1 text-body-sm text-on-surface-variant">
-              Sắp xếp danh mục cha, danh mục con và hình ảnh hiển thị trên cửa hàng.
-            </p>
-          </div>
-          <button
-            type="button"
-            onClick={openCreateForm}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-lg py-sm font-medium text-on-primary transition hover:bg-primary-container"
-          >
-            <span className="material-symbols-outlined text-[20px]">add</span>
-            Thêm danh mục
-          </button>
-        </header>
+        <PageHeader
+          eyebrow="Sản phẩm & nội dung"
+          title="Quản lý danh mục"
+          subtitle="Sắp xếp danh mục cha, danh mục con và hình ảnh hiển thị trên cửa hàng."
+          actions={
+            <div className='flex flex-row gap-5'>
+              <button
+                type="button"
+                onClick={openCreateForm}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-lg py-sm font-medium text-on-primary transition hover:bg-primary-container"
+              >
+                <span className="material-symbols-outlined text-[20px]">add</span>
+                Thêm danh mục
+              </button>
+              <button
+                type="button"
+                onClick={loadCategories}
+                disabled={loading}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-5 py-sm font-medium text-on-primary transition hover:bg-primary-container"
+              >
+                <span className="material-symbols-outlined text-[18px]">refresh</span>
+              </button>
+            </div>
+          }
+        />
 
         <section className="grid gap-md sm:grid-cols-3">
           {[
@@ -298,37 +305,6 @@ const AdminCategoryManagementPage = () => {
         </section>
 
         <section className="overflow-hidden rounded-xl border border-outline-variant bg-white">
-          <div className="flex flex-col gap-3 border-b border-outline-variant p-md md:flex-row md:items-center md:justify-between">
-            <div className="relative w-full max-w-md">
-              <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">search</span>
-              <input
-                value={search}
-                onChange={(event) => setSearch(event.target.value)}
-                placeholder="Tìm theo tên danh mục hoặc danh mục cha"
-                className="w-full rounded-lg border border-outline-variant py-2.5 pl-10 pr-10 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-              />
-              {search && (
-                <button
-                  type="button"
-                  onClick={() => setSearch('')}
-                  aria-label="Xóa tìm kiếm"
-                  className="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-[18px] text-outline"
-                >
-                  close
-                </button>
-              )}
-            </div>
-            <button
-              type="button"
-              onClick={loadCategories}
-              disabled={loading}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-outline-variant px-sm py-2.5 text-sm font-medium hover:bg-surface-container disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-[18px]">refresh</span>
-              Làm mới
-            </button>
-          </div>
-
           <div className="overflow-x-auto">
             <table className="w-full min-w-[820px] text-left">
               <thead className="bg-surface-container-low">

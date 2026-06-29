@@ -31,7 +31,7 @@ const AdminHeader = ({ onMenuClick }) => {
         {PAGE_TITLES[section] ?? "Quản trị"}
       </p>
 
-      <div className="relative hidden w-full max-w-sm flex-1 sm:block lg:max-w-md">
+      {/* <div className="relative hidden w-full max-w-sm flex-1 sm:block lg:max-w-md">
         <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-on-surface-variant">
           search
         </span>
@@ -40,7 +40,7 @@ const AdminHeader = ({ onMenuClick }) => {
           placeholder="Tìm kiếm sản phẩm, đơn hàng..."
           type="text"
         />
-      </div>
+      </div> */}
 
       <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2 lg:gap-3">
         <button
@@ -62,7 +62,7 @@ const AdminHeader = ({ onMenuClick }) => {
 
         <div className="mx-1 hidden h-8 w-px bg-outline-variant lg:block"></div>
         <div className="hidden items-center gap-2 lg:flex">
-          <span className="text-label-md font-bold">LUXE Boutique</span>
+          <span className="text-label-md font-bold">Clothes Shop</span>
         </div>
       </div>
     </header>

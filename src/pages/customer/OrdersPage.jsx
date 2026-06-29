@@ -1,47 +1,15 @@
 ﻿import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import OrderService from "../../services/OrderService";
+import {
+    normalizeOrderStatus,
+    ORDER_STATUS_META,
+    ORDER_STATUS_OPTIONS,
+} from "../../constants/orderStatus";
 
 const PER_PAGE = 10;
 
 const formatCurrency = (value) => `${Number(value || 0).toLocaleString("vi-VN")} VNĐ`;
-
-const statusOptions = [
-    { value: "ALL", label: "Tất cả" },
-    { value: "PENDING_PAYMENT", label: "Chờ thanh toán" },
-    { value: "CONFIRMED", label: "Đã xác nhận" },
-    { value: "SHIPPING", label: "Đang giao" },
-    { value: "COMPLETED", label: "Hoàn thành" },
-    { value: "CANCELLED", label: "Đã hủy" },
-    { value: "RETURNED", label: "Trả hàng" },
-];
-
-const statusMeta = {
-    PENDING_PAYMENT: {
-        label: "Chờ thanh toán",
-        className: "bg-secondary-container text-on-secondary-container",
-    },
-    CONFIRMED: {
-        label: "Đã xác nhận",
-        className: "bg-primary-fixed text-on-primary-fixed",
-    },
-    SHIPPING: {
-        label: "Đang giao",
-        className: "bg-tertiary-fixed text-on-tertiary-fixed",
-    },
-    COMPLETED: {
-        label: "Hoàn thành",
-        className: "bg-green-100 text-green-800",
-    },
-    CANCELLED: {
-        label: "Đã hủy",
-        className: "bg-error-container text-on-error-container",
-    },
-    RETURNED: {
-        label: "Trả hàng",
-        className: "bg-surface-container-high text-on-surface-variant",
-    },
-};
 
 const formatDate = (dateString) => {
     if (!dateString) return "Đang cập nhật";
@@ -155,7 +123,7 @@ const OrdersPage = () => {
             </div>
 
             <div className="mb-md flex gap-xs overflow-x-auto pb-xs">
-                {statusOptions.map((status) => (
+                {ORDER_STATUS_OPTIONS.map((status) => (
                     <button
                         key={status.value}
                         className={`shrink-0 rounded-full px-md py-xs font-label-sm text-label-sm transition-colors ${activeStatus === status.value
@@ -191,7 +159,8 @@ const OrdersPage = () => {
                     ))
                 ) : orders.length > 0 ? (
                     orders.map((order) => {
-                        const meta = statusMeta[order.status] || {
+                        const normalizedStatus = normalizeOrderStatus(order.status);
+                        const meta = ORDER_STATUS_META[normalizedStatus] || {
                             label: order.status || "Đang cập nhật",
                             className: "bg-surface-container-high text-on-surface-variant",
                         };

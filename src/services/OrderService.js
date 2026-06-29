@@ -1,4 +1,5 @@
 import api from "../configs/AxiosConfig";
+import { normalizeOrderStatusFilter } from "../constants/orderStatus";
 
 const resolvePayload = (response) => {
     const payload = response?.data ?? response;
@@ -45,7 +46,7 @@ const OrderService = {
             params: {
                 page,
                 per_page: perPage,
-                status: status && status !== "ALL" ? status : undefined,
+                status: normalizeOrderStatusFilter(status),
             },
         });
 
@@ -105,7 +106,12 @@ const OrderService = {
 
     // Admin: danh sách toàn bộ đơn hàng
     async getAdminOrders(params = {}) {
-        const response = await api.get("/admin/orders", { params });
+        const response = await api.get("/admin/orders", {
+            params: {
+                ...params,
+                status: normalizeOrderStatusFilter(params.status),
+            },
+        });
         return resolvePayload(response);
     },
 

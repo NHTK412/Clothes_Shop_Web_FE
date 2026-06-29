@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import PageHeader from '../../components/admin/PageHeader';
 import OrderService from '../../services/OrderService';
 
 const formatMoney = (value) => {
@@ -176,30 +177,16 @@ const AdminOrderDetailPage = () => {
   return (
     <main className="pt-16 min-h-screen bg-surface">
       <div className="p-lg max-w-[1280px] mx-auto w-full space-y-lg">
-            <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
-              <div>
-                <nav className="flex items-center gap-2 text-label-sm text-on-surface-variant mb-2">
-                  <Link to="/admin" className="hover:text-primary">Trang chủ</Link>
-                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-                  <Link to="/admin/orders" className="hover:text-primary">Đơn hàng</Link>
-                  <span className="material-symbols-outlined text-[16px]">chevron_right</span>
-                  <span className="text-on-surface font-semibold">Chi tiết đơn hàng</span>
-                </nav>
-                <div className="flex flex-wrap items-center gap-3">
-                  <h2 className="font-headline-md text-headline-md text-on-background">Chi tiết đơn hàng</h2>
-                  <span className="text-headline-sm text-on-surface-variant">{order?.order_code ?? `#ORD-${order?.id ?? id}`}</span>
-                  {order && (
-                    <span className={`inline-flex items-center rounded-full px-3 py-1 text-[12px] font-bold ${getOrderStatusClasses(order.status)}`}>
-                      {getOrderStatusLabel(order.status)}
-                    </span>
-                  )}
-                </div>
-                <p className="font-body-sm text-body-sm text-on-surface-variant mt-1">
-                  Đặt lúc {formatDate(order?.created_at ?? order?.createdAt ?? order?.created)}
-                  {order?.ghn_order_code ? ` · Mã vận đơn GHN: ${order.ghn_order_code}` : ''}
-                </p>
-              </div>
-              <div className="flex w-full gap-2 md:w-auto">
+            <PageHeader
+              eyebrow="Quản lý đơn hàng"
+              title={`Chi tiết đơn hàng ${order?.order_code ?? `#ORD-${order?.id ?? id}`}`}
+              subtitle={`Đặt lúc ${formatDate(order?.created_at ?? order?.createdAt ?? order?.created)}${order?.ghn_order_code ? ` · Mã vận đơn GHN: ${order.ghn_order_code}` : ''}`}
+              actions={<>
+                {order ? (
+                  <span className={`inline-flex items-center justify-center rounded-full px-3 py-2 text-[12px] font-bold ${getOrderStatusClasses(order.status)}`}>
+                    {getOrderStatusLabel(order.status)}
+                  </span>
+                ) : null}
                 <Link to="/admin/orders" className="flex-1 rounded-lg border border-primary px-md py-2 text-center text-primary transition-all hover:bg-secondary-container md:flex-none">
                   Quay lại
                 </Link>
@@ -207,8 +194,8 @@ const AdminOrderDetailPage = () => {
                   <span className="material-symbols-outlined">print</span>
                   In hóa đơn
                 </button>
-              </div>
-            </div>
+              </>}
+            />
 
             {loading ? (
               <div className="rounded-xl border border-outline-variant bg-surface-container-lowest p-md text-center text-on-surface-variant">

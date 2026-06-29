@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
 import ConfirmModal from './ConfirmModal';
 import ProfileService from '../../services/ProfileService';
+import { Popconfirm } from 'antd';
 
 const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_URL || 'http://127.0.0.1:8000/api').replace(/\/api\/?$/, '');
 
@@ -32,7 +33,7 @@ const getRoleLabel = (profile) => {
   return rawRole || 'Quản trị viên';
 };
 
-const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
+const AdminSidebar = ({ isOpen = false, onClose = () => { } }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -107,9 +108,8 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
 
   return (
     <aside
-      className={`fixed left-0 top-0 z-50 flex h-dvh w-72 flex-col border-r border-outline-variant bg-surface-container-lowest px-3 py-4 shadow-2xl transition-transform duration-200 md:z-40 md:w-20 md:translate-x-0 md:px-2 md:shadow-none lg:w-64 lg:px-4 ${
-        isOpen ? 'translate-x-0' : '-translate-x-full'
-      }`}
+      className={`fixed left-0 top-0 z-50 flex h-dvh w-72 flex-col border-r border-outline-variant bg-surface-container-lowest px-3 py-4 shadow-2xl transition-transform duration-200 md:z-40 md:w-20 md:translate-x-0 md:px-2 md:shadow-none lg:w-64 lg:px-4 ${isOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
     >
       {/* Logo Section */}
       <div className="mb-5 flex min-h-12 items-center justify-between px-2 md:justify-center lg:justify-start">
@@ -140,8 +140,8 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
             onClick={() => handleMenuClick(item)}
             title={item.label}
             className={`flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left transition-all md:justify-center md:px-0 lg:justify-start lg:px-3 ${activeMenu === item.id
-                ? 'bg-secondary-container font-bold text-primary md:ring-1 md:ring-primary/10 lg:border-r-4 lg:border-primary lg:ring-0'
-                : 'text-on-surface-variant hover:bg-surface-container'
+              ? 'bg-secondary-container font-bold text-primary md:ring-1 md:ring-primary/10 lg:border-r-4 lg:border-primary lg:ring-0'
+              : 'text-on-surface-variant hover:bg-surface-container'
               }`}
           >
             <span className="material-symbols-outlined shrink-0">{item.icon}</span>
@@ -173,28 +173,24 @@ const AdminSidebar = ({ isOpen = false, onClose = () => {} }) => {
           </div>
         </div>
 
-        {/* Logout Button */}
-        <button
-          onClick={handleLogoutClick}
-          title="Đăng xuất"
-          className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left font-label-md text-error transition-all hover:bg-error-container/20 md:justify-center md:px-0 lg:justify-start lg:px-3"
-        >
-          <span className="material-symbols-outlined">logout</span>
-          <span className="md:hidden lg:inline">Đăng xuất</span>
-        </button>
-      </div>
 
-      {/* Logout Confirmation Modal */}
-      <ConfirmModal
-        isOpen={isLogoutModalOpen}
-        title="Xác nhận đăng xuất"
-        message="Bạn có chắc chắn muốn đăng xuất khỏi hệ thống quản trị?"
-        confirmText="Đăng xuất"
-        cancelText="Hủy"
-        isDangerous={true}
-        onConfirm={handleConfirmLogout}
-        onCancel={handleCancelLogout}
-      />
+        <Popconfirm
+          title="Đăng xuất"
+          description="Bạn có chắc chắn muốn đăng xuất khỏi hệ thống quản trị?"
+          onConfirm={handleConfirmLogout}
+          // onCancel={cancel}
+          okText="Yes"
+          cancelText="No"
+        >
+          <button
+            title="Đăng xuất"
+            className="flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left font-label-md text-error transition-all hover:bg-error-container/20 md:justify-center md:px-0 lg:justify-start lg:px-3"
+          >
+            <span className="material-symbols-outlined">logout</span>
+            <span className="md:hidden lg:inline">Đăng xuất</span>
+          </button>
+        </Popconfirm>
+      </div>
     </aside>
   );
 };

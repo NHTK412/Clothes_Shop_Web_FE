@@ -1,4 +1,4 @@
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { notification } from "antd";
 import OrderService from "../../services/OrderService";
@@ -16,6 +16,7 @@ const formatAddress = (address) => (
 
 const CheckoutPage = () => {
     const { state } = useLocation();
+    const navigate = useNavigate();
     const [paymentMethod, setPaymentMethod] = useState("COD");
     const [note, setNote] = useState("");
     const [placingOrder, setPlacingOrder] = useState(false);
@@ -76,6 +77,8 @@ const CheckoutPage = () => {
                 message: "Tạo đơn hàng thành công",
                 description: `Đơn hàng #${order?.id || ""} đã được tạo.`,
             });
+            navigate("/return");
+
         } catch (e) {
             notification.error({
                 message: "Không thể tạo đơn hàng",

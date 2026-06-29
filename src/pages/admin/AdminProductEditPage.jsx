@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { UploadOutlined } from '@ant-design/icons';
 import { Button, notification, Upload } from 'antd';
+import PageHeader from '../../components/admin/PageHeader';
 import AttributeService from '../../services/AttributeService';
 import ProductsService from '../../services/ProductsService';
 
@@ -441,18 +442,18 @@ const AdminProductEditPage = () => {
   return (
     <main className="min-h-screen bg-surface-container-low pt-16">
       <div className="mx-auto max-w-[1200px] space-y-lg p-md md:p-lg">
-            <div className="flex flex-col justify-between gap-md border-b border-outline-variant pb-md md:flex-row md:items-end">
-              <div>
-                <p className="mb-1 text-sm font-medium text-primary">Quản lý sản phẩm</p>
-                <h1 className="font-headline-md text-headline-md text-on-background">Chỉnh sửa sản phẩm</h1>
-                <p className="mt-1 font-body-sm text-body-sm text-on-surface-variant">Cập nhật thông tin chung, giá bán và các biến thể.</p>
-              </div>
-              <button
+            <div className="border-b border-outline-variant pb-md">
+              <PageHeader
+                eyebrow="Quản lý sản phẩm"
+                title="Chỉnh sửa sản phẩm"
+                subtitle="Cập nhật thông tin chung, giá bán và các biến thể."
+                actions={<button
                 onClick={() => navigate(`/admin/products/${id}`)}
                 className="rounded-lg border border-outline bg-white px-lg py-sm text-on-surface transition hover:bg-surface-container"
               >
                 Quay lại chi tiết
-              </button>
+                </button>}
+              />
             </div>
 
             {error && (

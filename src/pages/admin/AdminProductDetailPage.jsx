@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { notification } from 'antd';
 import ConfirmModal from '../../components/admin/ConfirmModal';
+import PageHeader from '../../components/admin/PageHeader';
 import ProductsService from '../../services/ProductsService';
 
 const formatCurrency = (value) => {
@@ -132,12 +133,11 @@ const AdminProductDetailPage = () => {
   return (
     <main className="pt-16 min-h-screen bg-surface">
       <div className="max-w-[1280px] mx-auto p-gutter space-y-lg">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-md">
-              <div>
-                <h1 className="font-headline-md text-headline-md text-on-background">Chi tiết sản phẩm</h1>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">Xem và quản lý thông tin sản phẩm.</p>
-              </div>
-              <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center sm:gap-3">
+            <PageHeader
+              eyebrow="Quản lý sản phẩm"
+              title="Chi tiết sản phẩm"
+              subtitle="Xem và quản lý thông tin sản phẩm."
+              actions={<>
                 <button
                   onClick={() => navigate('/admin/products')}
                   className="w-full rounded-lg border border-outline bg-surface px-lg py-sm text-on-surface transition hover:bg-surface-container sm:w-auto"
@@ -156,8 +156,8 @@ const AdminProductDetailPage = () => {
                 >
                   Xóa
                 </button>
-              </div>
-            </div>
+              </>}
+            />
             <ConfirmModal
               isOpen={isDeleteModalOpen}
               title="Xác nhận xóa sản phẩm"

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Spin, Switch, notification } from 'antd';
 import ConfirmModal from '../../components/admin/ConfirmModal';
+import PageHeader from '../../components/admin/PageHeader';
 import AttributeService from '../../services/AttributeService';
 
 const EMPTY_TYPE_FORM = { id: null, name: '', display_name: '' };
@@ -350,25 +351,19 @@ const AdminAttributeManagementPage = () => {
   return (
     <main className="min-h-screen bg-surface pt-16">
       <div className="mx-auto max-w-[1280px] space-y-lg p-lg">
-        <header className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <p className="mb-1 text-sm font-medium text-primary">Sản phẩm &amp; biến thể</p>
-            <h1 className="font-headline-md text-headline-md text-on-background">
-              Thuộc tính sản phẩm
-            </h1>
-            <p className="mt-1 text-body-sm text-on-surface-variant">
-              Quản lý các thuộc tính như màu sắc, kích cỡ và giá trị dùng cho biến thể.
-            </p>
-          </div>
-          <button
+        <PageHeader
+          eyebrow="Sản phẩm & biến thể"
+          title="Thuộc tính sản phẩm"
+          subtitle="Quản lý các thuộc tính như màu sắc, kích cỡ và giá trị dùng cho biến thể."
+          actions={<button
             type="button"
             onClick={openCreateType}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-lg py-sm font-medium text-on-primary hover:bg-primary-container"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
             Thêm thuộc tính
-          </button>
-        </header>
+          </button>}
+        />
 
         <section className="grid gap-md sm:grid-cols-3">
           {[

@@ -6,6 +6,7 @@ import ProductTable from '../../components/admin/ProductTable';
 import ProductPagination from '../../components/admin/ProductPagination';
 import AddProductModal from '../../components/admin/AddProductModal';
 import ConfirmModal from '../../components/admin/ConfirmModal';
+import PageHeader from '../../components/admin/PageHeader';
 import ProductsService from '../../services/ProductsService';
 
 const normalizeCategoryValue = (value) => {
@@ -44,7 +45,7 @@ const AdminProductListPage = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
-  
+
   const itemsPerPage = 10;
 
   const [filters, setFilters] = useState({
@@ -75,7 +76,7 @@ const AdminProductListPage = () => {
         per_page: 100,
         page: 1,
       });
-      
+
       if (response.success || response.data) {
         const productsData = response.data?.items || response.data || [];
         setAllProducts(Array.isArray(productsData) ? productsData : []);
@@ -227,82 +228,81 @@ const AdminProductListPage = () => {
     <>
       <main className="pt-16 min-h-screen bg-surface">
         <div className="p-lg max-w-[1280px] mx-auto w-full">
-            {/* Error Alert */}
-            {error && (
-              <div className="mb-md p-md bg-error-container text-on-error-container rounded-lg text-body-sm">
-                {error}
-                <button
-                  onClick={() => setError(null)}
-                  className="ml-2 underline hover:no-underline"
-                >
-                  Đóng
-                </button>
-              </div>
-            )}
-
-            {/* Page Header */}
-            <div className="flex flex-col md:flex-row md:items-end justify-between mb-lg gap-md">
-              <div>
-                <h2 className="font-headline-md text-headline-md text-on-background">Sản phẩm</h2>
-                <p className="font-body-sm text-body-sm text-on-surface-variant">
-                  {products.length} sản phẩm trong danh mục
-                </p>
-              </div>
+          {/* Error Alert */}
+          {error && (
+            <div className="mb-md p-md bg-error-container text-on-error-container rounded-lg text-body-sm">
+              {error}
               <button
-                onClick={handleAddProduct}
-                disabled={isLoading}
-                className="bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md px-lg py-sm rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-50"
+                onClick={() => setError(null)}
+                className="ml-2 underline hover:no-underline"
               >
-                <span className="material-symbols-outlined mr-xs text-[20px]">add</span>
-                Thêm sản phẩm
+                Đóng
               </button>
             </div>
+          )}
 
-            {/* Filters Section */}
-            <ProductFilters filters={filters} setFilters={setFilters} categories={categories} />
+          <PageHeader
+            title="Quản lý sản phẩm"
+            subtitle={`${products.length} sản phẩm đang hiển thị trong danh sách.`}
+            actions={<button
+              onClick={handleAddProduct}
+              disabled={isLoading}
+              className="bg-primary hover:bg-primary-container text-on-primary font-label-md text-label-md px-lg py-sm rounded-lg flex items-center justify-center transition-all duration-200 disabled:opacity-50"
+            >
+              <span className="material-symbols-outlined mr-xs text-[20px]">add</span>
+              Thêm sản phẩm
+            </button>}
+          />
 
-            {/* Loading State */}
-            {isLoading && products.length === 0 ? (
-              <div className="text-center py-lg text-on-surface-variant">
-                <p className="text-body-md">Đang tải sản phẩm...</p>
-              </div>
-            ) : products.length === 0 ? (
-              <div className="text-center py-lg text-on-surface-variant">
-                <p className="text-body-md">Không tìm thấy sản phẩm nào</p>
-              </div>
-            ) : (
-              <>
-                {/* Products Table */}
-                <ProductTable
-                  products={paginatedProducts}
-                  onEdit={handleEditProduct}
-                  onDelete={handleDeleteProduct}
-                  onView={handleViewProduct}
-                  sortConfig={sortConfig}
-                  onSort={handleSort}
-                />
-                <ConfirmModal
-                  isOpen={deleteConfirm.isOpen}
-                  title="Xác nhận xóa sản phẩm"
-                  message={`Bạn có chắc chắn muốn xóa sản phẩm ${deleteConfirm.productName || ''}?`}
-                  confirmText="Xóa"
-                  cancelText="Hủy"
-                  isDangerous
-                  onConfirm={confirmDeleteProduct}
-                  onCancel={cancelDeleteProduct}
-                />
+          <br />
+          <br />
 
-                {/* Pagination */}
-                <ProductPagination
-                  currentPage={currentPage}
-                  totalPages={totalPages}
-                  totalItems={products.length}
-                  itemsPerPage={itemsPerPage}
-                  onPageChange={handlePageChange}
-                />
-              </>
-            )}
-      </div>
+
+          {/* Filters Section */}
+          <ProductFilters filters={filters} setFilters={setFilters} categories={categories} />
+
+          {/* Loading State */}
+          {isLoading && products.length === 0 ? (
+            <div className="text-center py-lg text-on-surface-variant">
+              <p className="text-body-md">Đang tải sản phẩm...</p>
+            </div>
+          ) : products.length === 0 ? (
+            <div className="text-center py-lg text-on-surface-variant">
+              <p className="text-body-md">Không tìm thấy sản phẩm nào</p>
+            </div>
+          ) : (
+            <>
+              {/* Products Table */}
+              <ProductTable
+                products={paginatedProducts}
+                onEdit={handleEditProduct}
+                onDelete={handleDeleteProduct}
+                onView={handleViewProduct}
+                sortConfig={sortConfig}
+                onSort={handleSort}
+              />
+              <ConfirmModal
+                isOpen={deleteConfirm.isOpen}
+                title="Xác nhận xóa sản phẩm"
+                message={`Bạn có chắc chắn muốn xóa sản phẩm ${deleteConfirm.productName || ''}?`}
+                confirmText="Xóa"
+                cancelText="Hủy"
+                isDangerous
+                onConfirm={confirmDeleteProduct}
+                onCancel={cancelDeleteProduct}
+              />
+
+              {/* Pagination */}
+              <ProductPagination
+                currentPage={currentPage}
+                totalPages={totalPages}
+                totalItems={products.length}
+                itemsPerPage={itemsPerPage}
+                onPageChange={handlePageChange}
+              />
+            </>
+          )}
+        </div>
       </main>
 
       {/* Add Product Modal */}

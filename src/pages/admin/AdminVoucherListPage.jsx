@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Spin, Switch, notification } from 'antd';
+import PageHeader from '../../components/admin/PageHeader';
 import VoucherService from '../../services/VoucherService';
 
 const EMPTY_FORM = {
@@ -245,24 +246,18 @@ const AdminVoucherListPage = () => {
   return (
     <main className="min-h-screen bg-surface pt-16">
       <div className="mx-auto max-w-[1280px] space-y-lg p-lg">
-        <div className="flex flex-col justify-between gap-4 md:flex-row md:items-end">
-          <div>
-            <h1 className="font-headline-md text-headline-md text-on-background">
-              Quản lý voucher
-            </h1>
-            <p className="mt-1 text-body-sm text-on-surface-variant">
-              Quản lý mã giảm giá cho đơn hàng và phí vận chuyển.
-            </p>
-          </div>
-          <button
+        <PageHeader
+          title="Quản lý voucher"
+          subtitle="Quản lý mã giảm giá cho đơn hàng và phí vận chuyển."
+          actions={<button
             type="button"
             onClick={openCreateForm}
             className="inline-flex items-center justify-center gap-2 rounded-lg bg-primary px-lg py-sm font-medium text-on-primary transition hover:bg-primary-container"
           >
             <span className="material-symbols-outlined text-[20px]">add</span>
             Thêm voucher
-          </button>
-        </div>
+          </button>}
+        />
 
         <div className="grid gap-md sm:grid-cols-2 xl:grid-cols-4">
           {[
@@ -287,26 +282,6 @@ const AdminVoucherListPage = () => {
 
         <section className="overflow-hidden rounded-xl border border-outline-variant bg-white">
           <div className="flex flex-col gap-3 border-b border-outline-variant p-md xl:flex-row xl:items-center xl:justify-between">
-            <form onSubmit={applySearch} className="flex w-full max-w-md items-center gap-2">
-              <div className="relative flex-1">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-outline">
-                  search
-                </span>
-                <input
-                  value={searchDraft}
-                  onChange={(event) => setSearchDraft(event.target.value)}
-                  placeholder="Tìm theo mã hoặc mô tả"
-                  className="w-full rounded-lg border border-outline-variant py-2 pl-10 pr-3 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
-                />
-              </div>
-              <button
-                type="submit"
-                className="rounded-lg border border-primary px-md py-2 text-sm font-medium text-primary hover:bg-primary/5"
-              >
-                Tìm
-              </button>
-            </form>
-
             <div className="flex flex-wrap gap-2">
               <select
                 value={filters.discount_type}
