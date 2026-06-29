@@ -1,8 +1,40 @@
 /* eslint-disable no-unused-vars */
+import { notification } from "antd";
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import productsService from "../../services/ProductsService";
+import PromotionService from "../../services/PromotionService";
 import Hero from "../../components/Hero";
+
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
+const getCurrentPrice = (price, discount) => {
+  const basePrice = Number(price || 0);
+  const discountAmount = Number(discount || 0);
+  return Math.max(basePrice - discountAmount, 0);
+};
+
+const getPromotionCountdown = (promotion) => {
+	if (!promotion) return null;
+
+	const now = Date.now();
+	const startTime = new Date(promotion.start_date).getTime();
+	const endTime = new Date(promotion.end_date).getTime();
+
+	if (!Number.isFinite(startTime) || !Number.isFinite(endTime) || now >= endTime) {
+		return null;
+	}
+
+	const isUpcoming = now < startTime;
+	const remaining = Math.max((isUpcoming ? startTime : endTime) - now, 0);
+
+	return {
+		phase: isUpcoming ? "upcoming" : "active",
+		days: Math.floor(remaining / 86400000),
+		hours: Math.floor((remaining % 86400000) / 3600000),
+		minutes: Math.floor((remaining % 3600000) / 60000),
+		seconds: Math.floor((remaining % 60000) / 1000),
+	};
+};
 
 export default function HomePage() {
 	const [hero, setHero] = useState({
@@ -15,6 +47,8 @@ export default function HomePage() {
 
 	const [categories, setCategories] = useState([]);
 	const [featured, setFeatured] = useState([]);
+	const [promotion, setPromotion] = useState(null);
+	const [promotionCountdown, setPromotionCountdown] = useState(null);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState(null);
 
@@ -23,14 +57,17 @@ export default function HomePage() {
 		async function load() {
 			setLoading(true);
 			try {
-				const [cats, prods] = await Promise.all([
+				const [cats, prods, currentPromotion] = await Promise.all([
 					productsService.getCategories(),
 					productsService.getFeaturedProducts(),
+					PromotionService.getCurrentPromotion().catch(() => null),
 				]);
 
 				if (!mounted) return;
 				setCategories(cats || []);
 				setFeatured(prods || []);
+				setPromotion(currentPromotion);
+				setPromotionCountdown(getPromotionCountdown(currentPromotion));
 			} catch (err) {
 				setError(err.message || "Lỗi tải dữ liệu");
 			} finally {
@@ -42,6 +79,17 @@ export default function HomePage() {
 			mounted = false;
 		};
 	}, []);
+
+	useEffect(() => {
+		if (!promotion) return undefined;
+
+		const updateCountdown = () => {
+			setPromotionCountdown(getPromotionCountdown(promotion));
+		};
+
+		const timer = window.setInterval(updateCountdown, 1000);
+		return () => window.clearInterval(timer);
+	}, [promotion]);
 
 	useEffect(() => {
 		// micro interactions and sticky header (port of original script)
@@ -82,7 +130,7 @@ export default function HomePage() {
 
 	return (
 		<div>
-			
+
 
 			<main>
 				{/* Hero */}
@@ -120,8 +168,7 @@ export default function HomePage() {
 					<div className="flex flex-col md:flex-row gap-gutter h-auto md:h-[600px]">
 						{Array.isArray(categories) && categories.length >= 3 ? (
 							<>
-								{/* Left large */}
-								<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+								<div className="group relative min-h-[300px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 									<img alt={categories[0].name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={categories[0].image} />
 									<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
 										<div className="text-white">
@@ -130,9 +177,8 @@ export default function HomePage() {
 										</div>
 									</div>
 								</div>
-								{/* Right column with two stacked */}
 								<div className="flex-1 flex flex-col gap-gutter">
-									<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+									<div className="group relative min-h-[260px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 										<img alt={categories[1].name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={categories[1].image} />
 										<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
 											<div className="text-white">
@@ -141,7 +187,7 @@ export default function HomePage() {
 											</div>
 										</div>
 									</div>
-									<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+									<div className="group relative min-h-[260px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 										<img alt={categories[2].name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-700 group-hover:scale-110" src={categories[2].image} />
 										<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
 											<div className="text-white">
@@ -153,9 +199,8 @@ export default function HomePage() {
 								</div>
 							</>
 						) : (
-							// fallback static layout for first load
 							<>
-								<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+								<div className="group relative min-h-[300px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 									<img alt="Thời trang Nữ" className="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB1jv8UoPjv77YvFoh_lCRlH_8qFxfWxaocWQBEQzpNsPqfwI98JQnuSUt3k7rnTXwXH6RALIoo-ex59wJ5k_0i4cZ4QblXYqBhl3d1wla8i1JA_8w4rR31kNSlf97AGMyOSqYfbHSR4GTUMkhBytKV_xbS0Jkra-1N4aam_L_F2wSP9fqmJWzQ1nWcnM_vScMXNpUv39HvPvNPBYbJgKRt3Nt63ZZqY3hcVuCiYgB1Wl70wMctZB17quwcgDuv-qx0ZVOKnAIVj1n_" />
 									<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex flex-end items-end p-lg">
 										<div className="text-white">
@@ -165,7 +210,7 @@ export default function HomePage() {
 									</div>
 								</div>
 								<div className="flex-1 flex flex-col gap-gutter">
-									<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+									<div className="group relative min-h-[260px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 										<img alt="Thời trang Nam" className="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAB0Fx_N6pWcosOr-o9AOiOnwQPdMt5WDluWBKP9tkuusswuxU7n_97Jk511_jua128yH-OS4-O0z8RhGkck69I9SR3m4amucFplfO-CEehDJHpc0LTj3HeIXl9ZdeC9yQM1kOeAYB28s_u6vmX6FE38Weam_qw8S3zB1weps7hW1xAAz4NDcIFFfOZBTH__c6Wc0lrABrWlr4RAoWrpHcJzheA7ck4QteH8h-QjM5FOZPYMGrJzkR9DqR34FSETlrn5BqPBrlHfmHT" />
 										<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
 											<div className="text-white">
@@ -174,7 +219,7 @@ export default function HomePage() {
 											</div>
 										</div>
 									</div>
-									<div className="flex-1 group relative overflow-hidden rounded-xl bg-surface-container">
+									<div className="group relative min-h-[260px] flex-1 overflow-hidden rounded-xl bg-surface-container">
 										<img alt="Phụ kiện" className="absolute inset-0 w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuC7kfP8hxwhqvWPl3eBUB0w61PYth9HLbyrJXJiHE8sJp56HeCus2HhSu42DFKV3qzb8Puswb8JRx7InKVC5DT7ZQ1kif-uMwBLbSoOQj21Z0S2VwSOKi-NDxsgeBJePGzeCx-8pNihSBwCpwHBOKQb0lR_boxueooJtEMrZk9w0BC3kBjdkRp4GB67YlGlOSQcd0dk3bKDarJzeo5RoQ8N5XMd83e2dUnz0UgEUypK6FXkbMc-yRjFeGDsruvQ4hoAwU56oAwEQpH1" />
 										<div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end p-lg">
 											<div className="text-white">
@@ -189,7 +234,6 @@ export default function HomePage() {
 					</div>
 				</section>
 
-				{/* Featured Products */}
 				<section className="py-xl bg-surface-container-low">
 					<div className="max-w-max-width mx-auto px-gutter">
 						<div className="flex justify-between items-end mb-lg">
@@ -217,7 +261,14 @@ export default function HomePage() {
 										<div className="p-sm text-center">
 											<p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">{p.category}</p>
 											<h3 className="font-headline-sm text-headline-sm text-on-surface truncate">{p.name}</h3>
-											<p className="font-body-md text-body-md font-bold text-primary mt-2">{p.priceDisplay}</p>
+											<div className="mt-2">
+												{p.discountAmount > 0 && p.originalPrice > p.price && (
+													<p className="text-body-sm text-secondary line-through">
+														{Number(p.originalPrice || 0).toLocaleString("vi-VN")} VNĐ
+													</p>
+												)}
+												<p className="font-body-md text-body-md font-bold text-primary">{p.priceDisplay}</p>
+											</div>
 										</div>
 									</Link>
 								))}
@@ -226,39 +277,72 @@ export default function HomePage() {
 					</div>
 				</section>
 
-				{/* Promo Banner */}
-				<section className="py-xl">
-					<div className="max-w-max-width mx-auto px-gutter">
-						<div className="relative w-full h-[400px] rounded-2xl overflow-hidden bg-primary-container">
-							<div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-md text-white">
-								<h2 className="font-display-lg text-display-lg mb-sm">Giảm giá mùa hè</h2>
-								<p className="font-body-lg text-body-lg mb-lg opacity-90 max-w-2xl">Cơ hội sở hữu những thiết kế đẳng cấp với ưu đãi lên đến 50%. Áp dụng cho toàn bộ danh mục sản phẩm New Arrivals.</p>
-								<div className="flex gap-sm">
-									<div className="bg-white/20 backdrop-blur-md px-md py-sm rounded-lg border border-white/30"><span className="font-headline-md text-headline-md block">12</span><span className="font-label-sm text-label-sm uppercase">Ngày</span></div>
-									<div className="bg-white/20 backdrop-blur-md px-md py-sm rounded-lg border border-white/30"><span className="font-headline-md text-headline-md block">08</span><span className="font-label-sm text-label-sm uppercase">Giờ</span></div>
-									<div className="bg-white/20 backdrop-blur-md px-md py-sm rounded-lg border border-white/30"><span className="font-headline-md text-headline-md block">45</span><span className="font-label-sm text-label-sm uppercase">Phút</span></div>
+				{promotion && promotionCountdown && (
+					<section className="py-xl">
+						<div className="max-w-max-width mx-auto px-gutter">
+							<div className="relative min-h-[520px] w-full overflow-hidden rounded-2xl bg-primary-container sm:min-h-[440px]">
+								<div className="relative z-10 h-full flex flex-col items-center justify-center text-center p-md text-white">
+									<p className="mb-xs font-label-md uppercase tracking-[0.2em] text-white/80">
+										{promotionCountdown.phase === "upcoming" ? "Sắp diễn ra" : "Đang diễn ra"}
+									</p>
+									<h2 className="mb-sm text-3xl font-bold sm:text-4xl lg:text-5xl">
+										{promotion.name || "Chương trình khuyến mãi"}
+									</h2>
+									<p className="font-body-lg text-body-lg mb-sm opacity-90 max-w-2xl">
+										{promotion.description ||
+											`Ưu đãi ${promotion.discount_type === "percentage"
+												? `${Number(promotion.discount_amount || 0)}%`
+												: formatCurrency(promotion.discount_amount)
+											} cho các sản phẩm trong chương trình.`}
+									</p>
+									<p className="mb-md text-sm font-medium text-white/80">
+										{promotionCountdown.phase === "upcoming"
+											? "Chương trình bắt đầu sau"
+											: "Chương trình kết thúc sau"}
+									</p>
+									<div className="grid grid-cols-2 gap-2 sm:flex sm:gap-sm">
+										{[
+											["Ngày", promotionCountdown.days],
+											["Giờ", promotionCountdown.hours],
+											["Phút", promotionCountdown.minutes],
+											["Giây", promotionCountdown.seconds],
+										].map(([label, value]) => (
+											<div
+												key={label}
+												className="min-w-16 rounded-lg border border-white/30 bg-white/20 px-sm py-sm backdrop-blur-md sm:px-md"
+											>
+												<span className="font-headline-md text-headline-md block">
+													{String(value).padStart(2, "0")}
+												</span>
+												<span className="font-label-sm text-label-sm uppercase">{label}</span>
+											</div>
+										))}
+									</div>
+									<Link
+										to={`/products?promotionId=${promotion.id}`}
+										className="mt-lg bg-white text-primary font-label-md text-label-md px-lg py-sm rounded-lg hover:bg-surface-container transition-all"
+									>
+										Khám phá ngay
+									</Link>
 								</div>
-								<button className="mt-lg bg-white text-primary font-label-md text-label-md px-lg py-sm rounded-lg hover:bg-surface-container transition-all">Khám Phá Ngay</button>
 							</div>
 						</div>
-					</div>
-				</section>
+					</section>
+				)}
 
-				{/* Newsletter */}
-				<section className="py-xl bg-surface-container border-t border-outline-variant">
+				{/* <section className="py-xl bg-surface-container border-t border-outline-variant">
 					<div className="max-w-max-width mx-auto px-gutter text-center">
 						<h3 className="font-headline-md text-headline-md text-on-surface mb-sm">Trải nghiệm phong cách LUXE</h3>
 						<p className="font-body-md text-body-md text-on-surface-variant mb-lg  mx-auto">Đăng ký để nhận thông tin về các bộ sưu tập giới hạn và ưu đãi độc quyền sớm nhất.</p>
-						<form className="flex flex-col md:flex-row gap-xs max-w-md mx-auto" onSubmit={(e)=>{e.preventDefault(); alert('Cảm ơn!')}}>
-							<input className="flex-grow bg-white border border-outline-variant rounded-lg px-md py-sm focus:outline-none focus:border-primary transition-colors font-body-sm text-body-sm" placeholder="Email của bạn" type="email" />
+						<form className="flex flex-col md:flex-row gap-xs mx-auto" onSubmit={(e) => { e.preventDefault(); alert('Cảm ơn!') }}>
+							<input className="flex-1 bg-white border border-outline-variant rounded-lg px-md py-sm focus:outline-none focus:border-primary transition-colors font-body-sm text-body-sm" placeholder="Email của bạn" type="email" />
 							<button className="bg-primary text-white font-label-md text-label-md px-md py-sm rounded-lg whitespace-nowrap hover:bg-on-primary-fixed-variant transition-colors" type="submit">Đăng ký</button>
 						</form>
 					</div>
-				</section>
+				</section> */}
 			</main>
 
-			
+
 		</div>
 	);
 }
-

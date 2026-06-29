@@ -53,8 +53,8 @@ const RegisterPage = () => {
 
     return (
         <main className="flex-grow flex items-center justify-center pt-[30px] pb-xl px-margin-mobile">
-            <div className="max-w-max-width w-full grid grid-cols-1 md:grid-cols-12 gap-gutter items-center">
-                <div className="hidden md:block md:col-span-6 relative h-[600px] overflow-hidden rounded-xl">
+            <div className="max-w-max-width w-full grid grid-cols-1 lg:grid-cols-12 gap-gutter items-center">
+                <div className="relative hidden h-[600px] overflow-hidden rounded-xl lg:col-span-6 lg:block">
                     <img alt="Fashion Lifestyle" className="absolute inset-0 w-full h-full object-cover"
                         data-alt="A high-end fashion lifestyle image featuring a sophisticated woman walking through a sun-drenched, minimalist architectural space. The color palette is dominated by soft whites and cool blues, reflecting the brand identity. The lighting is bright and airy, creating a professional and premium boutique atmosphere. High-fashion aesthetics are combined with clean lines and a sense of luxury commerce."
                         src="https://noithattugia.com/wp-content/uploads/Dien-tich-nho-nhung-shop-quan-ao-van-mang-lai-cam-giac-nhe-nhang-loi-loi-di-thong-thoang-thoai-mai-nhat.jpg" />
@@ -65,7 +65,7 @@ const RegisterPage = () => {
                             được những ưu đãi đặc biệt và quyền lợi độc quyền.</p>
                     </div>
                 </div>
-                <div className="md:col-span-6 flex justify-center">
+                <div className="flex justify-center lg:col-span-6">
                     <div
                         className="w-full max-w-[480px] bg-surface-container-lowest p-lg rounded-xl border border-outline-variant shadow-sm transition-all duration-300 hover:border-primary">
                         <div className="mb-lg">

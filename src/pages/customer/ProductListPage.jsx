@@ -1,11 +1,22 @@
-/* eslint-disable react-hooks/immutability */
 /* eslint-disable no-unused-vars */
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useEffect, useState, useRef } from "react";
-import { Link, useSearchParams } from "react-router-dom";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { notification } from "antd";
+import Cookies from "js-cookie";
 import productsService from "../../services/ProductsService";
+import ProfileService from "../../services/ProfileService";
+
+const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')}đ`;
+const getCurrentPrice = (price, discount) => {
+  const basePrice = Number(price || 0);
+  const discountAmount = Number(discount || 0);
+  return Math.max(basePrice - discountAmount, 0);
+};
 
 export default function ProductListPage() {
+  const [filtersOpen, setFiltersOpen] = useState(false);
+  const navigate = useNavigate();
   const [categories, setCategories] = useState([]);
   const [sizeOptions, setSizeOptions] = useState([]);
   const [colorOptions, setColorOptions] = useState([]);
@@ -26,6 +37,8 @@ export default function ProductListPage() {
   const [inStock, setInStock] = useState(false);
   const [page, setPage] = useState(1);
   const [perPage, setPerPage] = useState(12);
+  const [favoriteUpdatingId, setFavoriteUpdatingId] = useState(null);
+  const [favoriteProductIds, setFavoriteProductIds] = useState(() => new Set());
 
   useEffect(() => {
     let mounted = true;
@@ -46,10 +59,11 @@ export default function ProductListPage() {
       setCategory(c);
       setCategoriesSelected([c]);
       setPage(1);
-      loadProducts({ category: c, page: 1 });
+    } else {
+      setCategory("");
+      setCategoriesSelected([]);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     let mounted = true;
@@ -123,7 +137,10 @@ export default function ProductListPage() {
       };
 
       items = sortItems(items, sortKey);
-      setProducts(items);
+      setProducts(items.map((item) => ({
+        ...item,
+        isFavorite: item.isFavorite || favoriteProductIds.has(String(item.id)),
+      })));
       setPagination(res.pagination || null);
     } catch (e) {
       setError(e.message || "Lỗi khi tải sản phẩm");
@@ -137,6 +154,95 @@ export default function ProductListPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, perPage]);
 
+  useEffect(() => {
+    let mounted = true;
+
+    const loadFavorites = async () => {
+      if (!Cookies.get("access_token")) {
+        setFavoriteProductIds(new Set());
+        return;
+      }
+
+      try {
+        const profile = await ProfileService.getProfile();
+        const favorites = await productsService.getUserFavorites(profile?.id);
+        if (!mounted) return;
+
+        const favoriteIds = productsService.getFavoriteProductIds(favorites);
+        setFavoriteProductIds(favoriteIds);
+        setProducts((currentProducts) => currentProducts.map((item) => ({
+          ...item,
+          isFavorite: favoriteIds.has(String(item.id)),
+        })));
+      } catch (e) {
+        if (mounted) setFavoriteProductIds(new Set());
+      }
+    };
+
+    loadFavorites();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const handleToggleFavorite = async (event, product) => {
+    event.preventDefault();
+    event.stopPropagation();
+
+    const token = Cookies.get("access_token");
+    if (!token) {
+      notification.warning({
+        message: "Vui lòng đăng nhập",
+        description: "Bạn cần đăng nhập trước khi thêm sản phẩm vào yêu thích.",
+      });
+      navigate("/login");
+      return;
+    }
+
+    if (!product?.id || favoriteUpdatingId === product.id) return;
+
+    const nextFavorite = !product.isFavorite;
+    setFavoriteProductIds((currentIds) => {
+      const nextIds = new Set(currentIds);
+      if (nextFavorite) nextIds.add(String(product.id));
+      else nextIds.delete(String(product.id));
+      return nextIds;
+    });
+    setProducts((currentProducts) => currentProducts.map((item) => (
+      item.id === product.id ? { ...item, isFavorite: nextFavorite } : item
+    )));
+    setFavoriteUpdatingId(product.id);
+
+    try {
+      if (nextFavorite) {
+        await productsService.addFavorite(product.id);
+      } else {
+        await productsService.removeFavorite(product.id);
+      }
+
+      notification.success({
+        message: nextFavorite ? "Đã thêm vào yêu thích" : "Đã bỏ yêu thích",
+      });
+    } catch (e) {
+      setFavoriteProductIds((currentIds) => {
+        const nextIds = new Set(currentIds);
+        if (nextFavorite) nextIds.delete(String(product.id));
+        else nextIds.add(String(product.id));
+        return nextIds;
+      });
+      setProducts((currentProducts) => currentProducts.map((item) => (
+        item.id === product.id ? { ...item, isFavorite: !nextFavorite } : item
+      )));
+      notification.error({
+        message: "Không thể cập nhật yêu thích",
+        description: e?.response?.data?.message || "Vui lòng thử lại sau.",
+      });
+    } finally {
+      setFavoriteUpdatingId(null);
+    }
+  };
+
   // when `category` state changes (including initialized from URL), reload products immediately
   useEffect(() => {
     // avoid triggering on initial empty category
@@ -147,8 +253,21 @@ export default function ProductListPage() {
 
   return (
     <div className="max-w-max-width mx-auto px-gutter py-xl">
+      <button
+        type="button"
+        onClick={() => setFiltersOpen((value) => !value)}
+        className="mb-4 flex w-full items-center justify-between rounded-lg border border-outline-variant bg-surface-container-lowest px-4 py-3 font-medium md:hidden"
+      >
+        <span className="flex items-center gap-2">
+          <span className="material-symbols-outlined">tune</span>
+          Bộ lọc sản phẩm
+        </span>
+        <span className="material-symbols-outlined">
+          {filtersOpen ? "expand_less" : "expand_more"}
+        </span>
+      </button>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-lg">
-        <aside className="col-span-1">
+        <aside className={`${filtersOpen ? "block" : "hidden"} md:col-span-1 md:block`}>
           <div className="mb-md mt-6">
             <h3 className="font-headline-md text-headline-md mb-2">Filters</h3>
             <div className="bg-surface-container p-md rounded-lg">
@@ -285,8 +404,8 @@ export default function ProductListPage() {
           </div>
         </aside>
 
-        <section className="col-span-3">
-          <div className="flex justify-between items-center mb-lg">
+        <section className="md:col-span-3">
+          <div className="mb-lg flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
             <h2 className="font-headline-md">Sản phẩm</h2>
             <div className="flex items-center gap-sm">
               <label className="font-label-sm mr-2">Sort</label>
@@ -320,11 +439,42 @@ export default function ProductListPage() {
                       <Link key={p.id} to={`/products/${p.id}`} className="group bg-surface-container-lowest border border-outline-variant hover:border-primary transition-all duration-300 rounded-lg overflow-hidden">
                         <div className="relative overflow-hidden aspect-[3/4]">
                           <img alt={p.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src={p.image} />
+                          <button
+                            aria-label={p.isFavorite ? "Bỏ yêu thích" : "Thêm vào yêu thích"}
+                            className={`absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full border bg-white/95 shadow-sm backdrop-blur transition-all disabled:cursor-not-allowed disabled:opacity-60 ${
+                              p.isFavorite
+                                ? "border-red-500 text-red-600"
+                                : "border-white text-gray-700 hover:border-red-400 hover:text-red-500"
+                            }`}
+                            type="button"
+                            disabled={favoriteUpdatingId === p.id}
+                            onClick={(event) => handleToggleFavorite(event, p)}
+                          >
+                            <span
+                              className="material-symbols-outlined text-xl"
+                              style={{ fontVariationSettings: p.isFavorite ? "'FILL' 1" : "'FILL' 0" }}
+                            >
+                              favorite
+                            </span>
+                          </button>
                         </div>
                         <div className="p-sm text-center">
                           <p className="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider mb-1">{p.category}</p>
                           <h3 className="font-headline-sm text-headline-sm text-on-surface truncate">{p.name}</h3>
-                          <p className="font-body-md text-body-md font-bold text-primary mt-2">{p.priceDisplay}</p>
+                    {(() => {
+                      const basePrice = Number(p.price ?? p.original_price ?? p.list_price ?? 0);
+                      const discountAmount = Number(p.discount_price ?? 0);
+                      const currentPrice = getCurrentPrice(basePrice, discountAmount);
+                      const hasDiscount = discountAmount > 0 && discountAmount <= basePrice;
+                      return hasDiscount ? (
+                        <div className="mt-2">
+                          <p className="text-on-surface-variant line-through text-sm">{formatCurrency(basePrice)}</p>
+                          <p className="font-body-md text-body-md font-bold text-red-500 mt-1">{formatCurrency(currentPrice)}</p>
+                        </div>
+                      ) : (
+                        <p className="font-body-md text-body-md font-bold text-primary mt-2">{formatCurrency(basePrice)}</p>
+                      );
+                    })()}
                         </div>
                       </Link>
                     ))}

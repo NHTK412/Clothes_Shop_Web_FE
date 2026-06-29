@@ -1,10 +1,13 @@
+/* eslint-disable no-unused-vars */
 import { EyeInvisibleOutlined, EyeOutlined, LoadingOutlined } from "@ant-design/icons";
 import { Icon } from "@iconify/react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { login } from "../../services/AuthService";
+import { login, oauthLogin } from "../../services/AuthService";
 import { Button, notification, Spin } from "antd";
 import Cookies from "js-cookie";
+import { auth, googleProvider } from "../../configs/FirebaseConfig";
+import { signInWithPopup } from 'firebase/auth';
 
 const LoginPage = () => {
     const navigate = useNavigate();
@@ -13,17 +16,24 @@ const LoginPage = () => {
     const [password, setPassword] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
-    const handleSubmit = async (e) => {
+
+    const handleGoogleLogin = async () => {
         try {
-            e.preventDefault();
-            setLoading(true);
-            const loginData = {
-                email,
-                password
+            const result = await signInWithPopup(auth, googleProvider);
+
+            console.log("Google login result:", result);
+            console.log("Email:", result.user.email);
+            console.log("UID: ", result.user.uid);
+            console.log("displayName: ", result.user.displayName);
+
+            const oauthData = {
+                email: result.user.email,
+                uid: result.user.uid,
+                name: result.user.displayName,
+                provider: "GOOGLE"
             };
 
-            const response = await login(loginData);
-
+            const response = await oauthLogin(oauthData);
             notification.success({
                 title: "Đăng nhập thành công",
                 description: "Bạn đã đăng nhập thành công. Chuyển hướng đến trang chủ...",
@@ -34,6 +44,63 @@ const LoginPage = () => {
             });
 
             navigate('/');
+        }
+        catch (error) {
+            console.error("Google login error:", error);
+        }
+    }
+
+    const handleSubmit = async (e) => {
+        try {
+            e.preventDefault();
+            setLoading(true);
+            const loginData = {
+                email,
+                password
+            };
+
+            const response = await login(loginData);
+            const user = response?.user || {};
+            const role = String(response?.role || user?.role || user?.role_name || "ROLE_CUSTOMER").toUpperCase();
+            const isAdmin = Boolean(
+                response?.isAdmin ||
+                user?.is_admin === true ||
+                user?.isAdmin === true ||
+                role === "ROLE_ADMIN" ||
+                role === "ADMIN" ||
+                role === "SUPER_ADMIN"
+            );
+
+            notification.success({
+                message: "Đăng nhập thành công",
+                description: isAdmin ? "Bạn đã đăng nhập với quyền quản trị. Đang chuyển đến trang quản trị..." : "Bạn đã đăng nhập thành công. Chuyển hướng đến trang chủ...",
+            });
+
+            const expiresInDays = Number(response?.expires_in || 7) / (60 * 60 * 24);
+            const token = response?.access_token || response?.token;
+
+            console.log("[LoginPage] Login response received:");
+            console.log(`  Role detected: ${role}`);
+            console.log(`  Is Admin: ${isAdmin}`);
+            console.log(`  Token: ${token?.substring(0, 30)}...`);
+
+            if (token) {
+                Cookies.set("access_token", token, {
+                    expires: Number.isFinite(expiresInDays) && expiresInDays > 0 ? expiresInDays : 7,
+                    path: "/",
+                });
+                window.localStorage.setItem("access_token", token);
+                console.log("[LoginPage] Token saved to cookies & localStorage");
+            }
+
+            Cookies.set("user_role", role, {
+                expires: Number.isFinite(expiresInDays) && expiresInDays > 0 ? expiresInDays : 7,
+                path: "/",
+            });
+            window.localStorage.setItem("user_role", role);
+            console.log(`[LoginPage] Role '${role}' saved to cookies & localStorage`);
+
+            navigate(isAdmin ? "/admin" : "/");
 
         } catch (error) {
             console.log("Login error:", error);
@@ -56,6 +123,7 @@ const LoginPage = () => {
                 </div>
                 <div className="grid grid-cols-1 gap-sm mb-lg">
                     <button
+                        onClick={handleGoogleLogin}
                         className="flex items-center justify-center gap-xs py-sm border border-outline-variant rounded-lg hover:bg-surface-container-low hover:cursor-pointer transition-colors duration-200 group">
                         <Icon icon="logos:google-icon" width="20" height="20" />
                         <span className="font-label-md text-label-md text-on-surface">Google</span>
