@@ -18,6 +18,7 @@ import AdminProductListPage from "../pages/admin/AdminProductListPage";
 import AdminProductDetailPage from "../pages/admin/AdminProductDetailPage";
 import AdminProductEditPage from "../pages/admin/AdminProductEditPage";
 import AdminCategoryManagementPage from "../pages/admin/AdminCategoryManagementPage";
+import AdminAttributeManagementPage from "../pages/admin/AdminAttributeManagementPage";
 import AdminCustomerListPage from "../pages/admin/AdminCustomerListPage";
 import AdminCustomerDetailPage from "../pages/admin/AdminCustomerDetailPage";
 import AdminOrderListPage from "../pages/admin/AdminOrderListPage";
@@ -88,6 +89,10 @@ const router = createBrowserRouter([
             {
                 path: "categories",
                 element: <AdminCategoryManagementPage />
+            },
+            {
+                path: "attributes",
+                element: <AdminAttributeManagementPage />
             },
             {
                 path: "settings",

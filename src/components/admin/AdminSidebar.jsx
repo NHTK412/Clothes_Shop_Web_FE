@@ -69,6 +69,7 @@ const AdminSidebar = () => {
     { id: 'orders', label: 'Đơn hàng', icon: 'shopping_cart', path: '/admin/orders' },
     { id: 'customers', label: 'Khách hàng', icon: 'group', path: '/admin/customers' },
     { id: 'categories', label: 'Danh mục', icon: 'category', path: '/admin/categories' },
+    { id: 'attributes', label: 'Thuộc tính', icon: 'tune', path: '/admin/attributes' },
     { id: 'settings', label: 'Cài đặt', icon: 'settings', path: '/admin/settings' },
   ];
 
