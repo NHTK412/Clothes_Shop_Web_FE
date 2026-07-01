@@ -28,6 +28,7 @@ import AdminSettingsPage from "../pages/admin/AdminSettingsPage";
 import AdminPromotionListPage from "../pages/admin/AdminPromotionListPage";
 import AdminVoucherListPage from "../pages/admin/AdminVoucherListPage";
 import AdminRefundManagementPage from "../pages/admin/AdminRefundManagementPage";
+import AdminBannerManagementPage from "../pages/admin/AdminBannerManagementPage";
 import CheckoutPage from "../pages/customer/CheckoutPage";
 import ReturnPage from "../pages/customer/ReturnPage";
 import OrdersPage from "../pages/customer/OrdersPage";
@@ -91,6 +92,10 @@ const router = createBrowserRouter([
             {
                 path: "refunds",
                 element: <AdminRefundManagementPage />
+            },
+            {
+                path: "banners",
+                element: <AdminBannerManagementPage />
             },
             {
                 path: "categories",

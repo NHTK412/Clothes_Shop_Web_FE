@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import Cookies from 'js-cookie';
-import ConfirmModal from './ConfirmModal';
 import ProfileService from '../../services/ProfileService';
 import { Popconfirm } from 'antd';
 
@@ -36,7 +35,6 @@ const getRoleLabel = (profile) => {
 const AdminSidebar = ({ isOpen = false, onClose = () => { } }) => {
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
   const [profile, setProfile] = useState(null);
   const [avatarError, setAvatarError] = useState(false);
 
@@ -66,6 +64,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => { } }) => {
     { id: 'dashboard', label: 'Thống kê', icon: 'dashboard', path: '/admin/dashboard' },
     { id: 'products', label: 'Sản phẩm', icon: 'inventory_2', path: '/admin/products' },
     { id: 'promotions', label: 'Khuyến mãi', icon: 'sell', path: '/admin/promotions' },
+    { id: 'banners', label: 'Banner', icon: 'panorama', path: '/admin/banners' },
     { id: 'vouchers', label: 'Voucher', icon: 'confirmation_number', path: '/admin/vouchers' },
     { id: 'orders', label: 'Đơn hàng', icon: 'shopping_cart', path: '/admin/orders' },
     { id: 'refunds', label: 'Trả hàng & hoàn tiền', icon: 'assignment_return', path: '/admin/refunds' },
@@ -80,10 +79,6 @@ const AdminSidebar = ({ isOpen = false, onClose = () => { } }) => {
     onClose();
   };
 
-  const handleLogoutClick = () => {
-    setIsLogoutModalOpen(true);
-  };
-
   const handleConfirmLogout = () => {
     // Clear tokens and role from cookies and localStorage
     Cookies.remove('access_token');
@@ -93,13 +88,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => { } }) => {
     window.localStorage.removeItem('token');
     window.localStorage.removeItem('user_role');
 
-    // Close modal and navigate to login
-    setIsLogoutModalOpen(false);
     navigate('/login');
-  };
-
-  const handleCancelLogout = () => {
-    setIsLogoutModalOpen(false);
   };
 
   const displayName = getDisplayName(profile);
