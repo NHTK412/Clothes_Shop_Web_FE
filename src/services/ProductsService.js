@@ -458,6 +458,47 @@ const ProductsService = {
     }
   },
 
+  async getProductReviews(productId, params = {}) {
+    if (!productId) {
+      return {
+        items: [],
+        pagination: { current_page: 1, per_page: 10, total: 0, last_page: 1 },
+      };
+    }
+
+    const response = await api.get(`/products/${productId}/reviews`, {
+      params: {
+        rating: params.rating || undefined,
+        has_images:
+          params.has_images === true || params.has_images === 1 || params.has_images === "1"
+            ? 1
+            : params.has_images === false || params.has_images === 0 || params.has_images === "0"
+              ? 0
+              : undefined,
+        sort: params.sort || "newest",
+        page: params.page || 1,
+        per_page: params.per_page || 10,
+      },
+    });
+    const payload = response?.data ?? response ?? {};
+
+    return {
+      items: Array.isArray(payload?.items) ? payload.items : [],
+      pagination: payload?.pagination ?? {
+        current_page: 1,
+        per_page: Number(params.per_page || 10),
+        total: 0,
+        last_page: 1,
+      },
+    };
+  },
+
+  async getProductReviewsSummary(productId) {
+    if (!productId) return null;
+    const response = await api.get(`/products/${productId}/reviews/summary`);
+    return response?.data ?? response;
+  },
+
   async addFavorite(productId) {
     const response = await api.post(`/products/${productId}/favorites`);
     return response?.data ?? response;

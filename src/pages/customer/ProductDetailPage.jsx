@@ -1,11 +1,44 @@
 /* eslint-disable no-unused-vars */
 import React, { useEffect, useRef, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
-import { notification } from "antd";
+import { Image, Rate, Spin, notification } from "antd";
 import Cookies from "js-cookie";
 import productsService from "../../services/ProductsService";
 import CartService from "../../services/CartService";
 import ProfileService from "../../services/ProfileService";
+
+const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000/api")
+  .replace(/\/api\/?$/, "");
+
+const EMPTY_REVIEW_SUMMARY = {
+  average_rating: 0,
+  total_reviews: 0,
+  distribution: [5, 4, 3, 2, 1].map((rating) => ({
+    rating,
+    count: 0,
+    percentage: 0,
+  })),
+};
+
+const resolveMediaUrl = (value) => {
+  if (!value) return "";
+  if (/^https?:\/\//i.test(value)) return value;
+  return `${BACKEND_ORIGIN}/${String(value).replace(/^\/+/, "")}`;
+};
+
+const formatReviewDate = (value) => {
+  if (!value) return "-";
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "-";
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+  }).format(date);
+};
+
+const getCustomerInitial = (customer) =>
+  String(customer?.name || "K").trim().charAt(0).toUpperCase();
 
 const getVariantAttributeValues = (variant) => {
   const values = variant?.attribute_values ?? variant?.attributeValues ?? variant?.attributes ?? [];
@@ -104,6 +137,20 @@ export default function ProductDetailPage() {
   const [favoriteLoading, setFavoriteLoading] = useState(false);
   const [activeTab, setActiveTab] = useState(0);
   const [similarProducts, setSimilarProducts] = useState([]);
+  const [reviewSummary, setReviewSummary] = useState(EMPTY_REVIEW_SUMMARY);
+  const [reviews, setReviews] = useState([]);
+  const [reviewPagination, setReviewPagination] = useState({
+    current_page: 1,
+    per_page: 10,
+    total: 0,
+    last_page: 1,
+  });
+  const [reviewRating, setReviewRating] = useState("");
+  const [reviewImageFilter, setReviewImageFilter] = useState("");
+  const [reviewSort, setReviewSort] = useState("newest");
+  const [reviewPage, setReviewPage] = useState(1);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [reviewsError, setReviewsError] = useState("");
   const productSectionRef = useRef(null);
 
   const handleBlankClick = (e) => {
@@ -152,6 +199,66 @@ export default function ProductDetailPage() {
     load();
     return () => (mounted = false);
   }, [id]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadReviewSummary = async () => {
+      try {
+        const response = await productsService.getProductReviewsSummary(id);
+        if (!mounted) return;
+        setReviewSummary({
+          ...EMPTY_REVIEW_SUMMARY,
+          ...(response || {}),
+          distribution: Array.isArray(response?.distribution)
+            ? response.distribution
+            : EMPTY_REVIEW_SUMMARY.distribution,
+        });
+      } catch {
+        if (mounted) setReviewSummary(EMPTY_REVIEW_SUMMARY);
+      }
+    };
+
+    loadReviewSummary();
+    return () => {
+      mounted = false;
+    };
+  }, [id]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadReviews = async () => {
+      setReviewsLoading(true);
+      setReviewsError("");
+      try {
+        const response = await productsService.getProductReviews(id, {
+          rating: reviewRating || undefined,
+          has_images: reviewImageFilter === "" ? undefined : reviewImageFilter,
+          sort: reviewSort,
+          page: reviewPage,
+          per_page: 10,
+        });
+        if (!mounted) return;
+        setReviews(response.items);
+        setReviewPagination(response.pagination);
+      } catch (reviewError) {
+        if (!mounted) return;
+        setReviews([]);
+        setReviewsError(
+          reviewError?.response?.data?.message ||
+          "Không thể tải đánh giá sản phẩm. Vui lòng thử lại.",
+        );
+      } finally {
+        if (mounted) setReviewsLoading(false);
+      }
+    };
+
+    loadReviews();
+    return () => {
+      mounted = false;
+    };
+  }, [id, reviewImageFilter, reviewPage, reviewRating, reviewSort]);
 
   // load similar products from same category (limit 4)
   useEffect(() => {
@@ -387,7 +494,22 @@ export default function ProductDetailPage() {
                     <div className="text-on-surface-variant line-through ">{formatCurrency(originalPrice)}</div>
                     <div className=" text-red-500 font-bold text-3xl md:text-4xl">{formatCurrency(finalPrice)}</div>
                   </div>
-                  <div className="text-sm text-on-surface-variant mt-2">Chưa có đánh giá</div>
+                  <div className="mt-2 flex flex-wrap items-center gap-2">
+                    <Rate
+                      allowHalf
+                      disabled
+                      value={Number(reviewSummary.average_rating || 0)}
+                      className="text-base"
+                    />
+                    <span className="text-sm font-semibold text-on-surface">
+                      {Number(reviewSummary.average_rating || 0).toLocaleString("vi-VN", {
+                        maximumFractionDigits: 2,
+                      })}
+                    </span>
+                    <a href="#product-reviews" className="text-sm text-primary hover:underline">
+                      ({Number(reviewSummary.total_reviews || 0).toLocaleString("vi-VN")} đánh giá)
+                    </a>
+                  </div>
                 </div>
               );
             }
@@ -395,7 +517,22 @@ export default function ProductDetailPage() {
             return (
               <div className="mb-md">
                 <div className="font-bold text-3xl md:text-4xl">{formatCurrency(display)}</div>
-                <div className="text-sm text-on-surface-variant mt-2">Chưa có đánh giá</div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <Rate
+                    allowHalf
+                    disabled
+                    value={Number(reviewSummary.average_rating || 0)}
+                    className="text-base"
+                  />
+                  <span className="text-sm font-semibold text-on-surface">
+                    {Number(reviewSummary.average_rating || 0).toLocaleString("vi-VN", {
+                      maximumFractionDigits: 2,
+                    })}
+                  </span>
+                  <a href="#product-reviews" className="text-sm text-primary hover:underline">
+                    ({Number(reviewSummary.total_reviews || 0).toLocaleString("vi-VN")} đánh giá)
+                  </a>
+                </div>
               </div>
             );
           })()}
@@ -562,7 +699,278 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </div>
-    <hr className="m-10 border-t border-divider" />
+      <hr className="my-8 border-t border-divider sm:my-10" />
+
+      <section id="product-reviews" className="scroll-mt-24">
+        <div className="mb-6">
+          <p className="text-sm font-semibold uppercase tracking-wider text-primary">
+            Khách hàng nói gì
+          </p>
+          <h2 className="mt-1 text-2xl font-bold text-on-surface sm:text-3xl">
+            Đánh giá sản phẩm
+          </h2>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-[360px_1fr]">
+          <aside className="h-fit rounded-xl border border-outline-variant bg-surface-container-lowest p-5">
+            <div className="border-b border-outline-variant pb-5 text-center">
+              <p className="text-5xl font-bold text-primary">
+                {Number(reviewSummary.average_rating || 0).toLocaleString("vi-VN", {
+                  maximumFractionDigits: 2,
+                })}
+              </p>
+              <Rate
+                allowHalf
+                disabled
+                value={Number(reviewSummary.average_rating || 0)}
+                className="mt-2"
+              />
+              <p className="mt-2 text-sm text-on-surface-variant">
+                Dựa trên {Number(reviewSummary.total_reviews || 0).toLocaleString("vi-VN")} đánh giá
+              </p>
+            </div>
+
+            <div className="mt-5 space-y-3">
+              {reviewSummary.distribution.map((item) => (
+                <button
+                  type="button"
+                  key={item.rating}
+                  onClick={() => {
+                    setReviewRating(String(item.rating));
+                    setReviewPage(1);
+                  }}
+                  className={`grid w-full grid-cols-[52px_1fr_42px] items-center gap-3 rounded-lg px-2 py-1.5 text-left transition-colors hover:bg-surface-container-low ${
+                    String(reviewRating) === String(item.rating)
+                      ? "bg-secondary-container"
+                      : ""
+                  }`}
+                >
+                  <span className="inline-flex items-center gap-1 text-sm font-medium">
+                    {item.rating}
+                    <span
+                      className="material-symbols-outlined text-base text-amber-500"
+                      style={{ fontVariationSettings: "'FILL' 1" }}
+                    >
+                      star
+                    </span>
+                  </span>
+                  <span className="h-2 overflow-hidden rounded-full bg-surface-container-high">
+                    <span
+                      className="block h-full rounded-full bg-amber-400 transition-all"
+                      style={{ width: `${Math.min(100, Math.max(0, Number(item.percentage || 0)))}%` }}
+                    />
+                  </span>
+                  <span className="text-right text-xs text-on-surface-variant">
+                    {Number(item.count || 0)}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </aside>
+
+          <div className="min-w-0">
+            <div className="mb-4 flex flex-col gap-3 rounded-xl border border-outline-variant bg-surface-container-lowest p-4 md:flex-row md:items-center md:justify-between">
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setReviewRating("");
+                    setReviewPage(1);
+                  }}
+                  className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                    reviewRating === ""
+                      ? "bg-primary text-on-primary"
+                      : "border border-outline-variant text-on-surface-variant hover:bg-surface-container"
+                  }`}
+                >
+                  Tất cả
+                </button>
+                {[5, 4, 3, 2, 1].map((rating) => (
+                  <button
+                    type="button"
+                    key={rating}
+                    onClick={() => {
+                      setReviewRating(String(rating));
+                      setReviewPage(1);
+                    }}
+                    className={`inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition-colors ${
+                      String(reviewRating) === String(rating)
+                        ? "bg-primary text-on-primary"
+                        : "border border-outline-variant text-on-surface-variant hover:bg-surface-container"
+                    }`}
+                  >
+                    {rating}
+                    <span className="material-symbols-outlined text-base">star</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex flex-col gap-2 sm:flex-row">
+                <select
+                  value={reviewImageFilter}
+                  onChange={(event) => {
+                    setReviewImageFilter(event.target.value);
+                    setReviewPage(1);
+                  }}
+                  className="rounded-lg border border-outline-variant bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+                  aria-label="Lọc đánh giá theo hình ảnh"
+                >
+                  <option value="">Tất cả hình ảnh</option>
+                  <option value="1">Có hình ảnh</option>
+                  <option value="0">Không có hình ảnh</option>
+                </select>
+                <select
+                  value={reviewSort}
+                  onChange={(event) => {
+                    setReviewSort(event.target.value);
+                    setReviewPage(1);
+                  }}
+                  className="rounded-lg border border-outline-variant bg-white px-3 py-2 text-sm outline-none focus:border-primary"
+                  aria-label="Sắp xếp đánh giá"
+                >
+                  <option value="newest">Mới nhất</option>
+                  <option value="oldest">Cũ nhất</option>
+                  <option value="highest_rating">Điểm cao nhất</option>
+                  <option value="lowest_rating">Điểm thấp nhất</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="overflow-hidden rounded-xl border border-outline-variant bg-surface-container-lowest">
+              {reviewsLoading ? (
+                <div className="flex min-h-64 items-center justify-center">
+                  <Spin size="large" tip="Đang tải đánh giá..." />
+                </div>
+              ) : reviewsError ? (
+                <div className="p-8 text-center">
+                  <span className="material-symbols-outlined text-4xl text-error">error</span>
+                  <p className="mt-2 text-sm text-error">{reviewsError}</p>
+                </div>
+              ) : reviews.length === 0 ? (
+                <div className="p-10 text-center">
+                  <span className="material-symbols-outlined text-5xl text-outline">reviews</span>
+                  <h3 className="mt-3 text-lg font-semibold text-on-surface">
+                    Chưa có đánh giá phù hợp
+                  </h3>
+                  <p className="mt-1 text-sm text-on-surface-variant">
+                    Hãy thử thay đổi bộ lọc để xem các đánh giá khác.
+                  </p>
+                </div>
+              ) : (
+                <div className="divide-y divide-outline-variant">
+                  {reviews.map((review) => (
+                    <article key={review.id} className="p-5">
+                      <div className="flex items-start gap-3">
+                        <div className="h-11 w-11 shrink-0 overflow-hidden rounded-full bg-secondary-container">
+                          {review.customer?.avatar ? (
+                            <img
+                              src={resolveMediaUrl(review.customer.avatar)}
+                              alt={review.customer?.name || "Khách hàng"}
+                              className="h-full w-full object-cover"
+                            />
+                          ) : (
+                            <span className="flex h-full w-full items-center justify-center font-bold text-primary">
+                              {getCustomerInitial(review.customer)}
+                            </span>
+                          )}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between">
+                            <div>
+                              <p className="font-semibold text-on-surface">
+                                {review.customer?.name || "Khách hàng"}
+                              </p>
+                              <Rate
+                                disabled
+                                value={Number(review.rating || 0)}
+                                className="text-sm"
+                              />
+                            </div>
+                            <time className="text-xs text-on-surface-variant">
+                              {formatReviewDate(review.created_at)}
+                            </time>
+                          </div>
+
+                          {Array.isArray(review.variant?.attributes) && review.variant.attributes.length > 0 ? (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                              {review.variant.attributes.map((attribute) => (
+                                <span
+                                  key={`${attribute.type}-${attribute.value}`}
+                                  className="rounded-full bg-surface-container px-2.5 py-1 text-xs text-on-surface-variant"
+                                >
+                                  {attribute.type_label || attribute.type}:{" "}
+                                  <strong className="text-on-surface">
+                                    {attribute.value_label || attribute.value}
+                                  </strong>
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
+
+                          <p className="mt-3 whitespace-pre-line text-sm leading-6 text-on-surface">
+                            {review.comment || "Khách hàng không để lại bình luận."}
+                          </p>
+
+                          {Array.isArray(review.images) && review.images.length > 0 ? (
+                            <Image.PreviewGroup>
+                              <div className="mt-4 flex flex-wrap gap-2">
+                                {review.images.map((image, index) => {
+                                  const imageUrl = resolveMediaUrl(image?.url || image);
+                                  return (
+                                    <Image
+                                      key={image?.id || `${review.id}-${index}`}
+                                      src={imageUrl}
+                                      alt={`Ảnh đánh giá ${index + 1}`}
+                                      width={88}
+                                      height={88}
+                                      className="rounded-lg object-cover"
+                                    />
+                                  );
+                                })}
+                              </div>
+                            </Image.PreviewGroup>
+                          ) : null}
+                        </div>
+                      </div>
+                    </article>
+                  ))}
+                </div>
+              )}
+
+              {reviewPagination.last_page > 1 ? (
+                <div className="flex flex-col gap-3 border-t border-outline-variant px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                  <p className="text-sm text-on-surface-variant">
+                    {Number(reviewPagination.total || 0).toLocaleString("vi-VN")} đánh giá
+                  </p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      type="button"
+                      disabled={reviewPage <= 1 || reviewsLoading}
+                      onClick={() => setReviewPage((page) => Math.max(1, page - 1))}
+                      className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-medium disabled:opacity-40"
+                    >
+                      Trước
+                    </button>
+                    <span className="px-2 text-sm font-medium">
+                      {reviewPagination.current_page || reviewPage}/{reviewPagination.last_page}
+                    </span>
+                    <button
+                      type="button"
+                      disabled={reviewPage >= reviewPagination.last_page || reviewsLoading}
+                      onClick={() => setReviewPage((page) => Math.min(reviewPagination.last_page, page + 1))}
+                      className="rounded-lg border border-outline-variant px-4 py-2 text-sm font-medium disabled:opacity-40"
+                    >
+                      Sau
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <hr className="my-8 border-t border-divider sm:my-10" />
       {/* Similar products section */}
       {similarProducts && similarProducts.length > 0 && (
         <div>
