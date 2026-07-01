@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal, Spin, Switch, notification } from 'antd';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import PageHeader from '../../components/admin/PageHeader';
+import AdminActionButton from '../../components/admin/AdminActionButton';
 import AttributeService from '../../services/AttributeService';
 
 const EMPTY_TYPE_FORM = { id: null, name: '', display_name: '' };
@@ -477,7 +478,7 @@ const AdminAttributeManagementPage = () => {
                         <th className="px-md py-sm">Giá trị hệ thống</th>
                         <th className="px-md py-sm">Metadata</th>
                         <th className="px-md py-sm">Cập nhật</th>
-                        <th className="px-md py-sm text-right">Thao tác</th>
+                        <th className="px-md py-sm text-right">Hành động</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-outline-variant">
@@ -510,8 +511,17 @@ const AdminAttributeManagementPage = () => {
                             <td className="px-md py-sm text-sm text-on-surface-variant">{formatDate(item.updated_at)}</td>
                             <td className="px-md py-sm">
                               <div className="flex justify-end gap-2">
-                                <button type="button" onClick={() => openEditValue(item)} className="rounded-lg border border-outline-variant px-3 py-1.5 text-sm hover:bg-surface-container">Sửa</button>
-                                <button type="button" onClick={() => setDeleteTarget({ kind: 'value', item })} className="rounded-lg border border-error/40 px-3 py-1.5 text-sm text-error hover:bg-error-container/30">Xóa</button>
+                                <AdminActionButton
+                                  icon="edit"
+                                  label="Chỉnh sửa giá trị"
+                                  onClick={() => openEditValue(item)}
+                                />
+                                <AdminActionButton
+                                  icon="delete"
+                                  label="Xóa giá trị"
+                                  tone="danger"
+                                  onClick={() => setDeleteTarget({ kind: 'value', item })}
+                                />
                               </div>
                             </td>
                           </tr>

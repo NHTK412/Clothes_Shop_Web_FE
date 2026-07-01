@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../../components/admin/PageHeader';
+import AdminActionButton from '../../components/admin/AdminActionButton';
 import OrderService from '../../services/OrderService';
 import {
   normalizeOrderStatus,
@@ -372,14 +373,10 @@ const AdminOrderListPage = () => {
                       <td className="px-md py-4 text-right">
                         <div className="flex justify-end gap-2">
                           <Link to={`/admin/orders/${order.id}`}>
-                            <button className="p-2 text-outline hover:text-primary transition-colors">
-                              <span className="material-symbols-outlined">visibility</span>
-                            </button>
+                            <AdminActionButton icon="visibility" label="Xem chi tiết đơn hàng" />
                           </Link>
                           <Link to={order.user_id ? `/admin/customers/${order.user_id}` : '/admin/customers'}>
-                            <button className="p-2 text-outline hover:text-primary transition-colors">
-                              <span className="material-symbols-outlined">person</span>
-                            </button>
+                            <AdminActionButton icon="person" label="Xem khách hàng" />
                           </Link>
                         </div>
                       </td>

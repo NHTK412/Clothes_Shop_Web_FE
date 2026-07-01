@@ -1,3 +1,5 @@
+import AdminActionButton from './AdminActionButton';
+
 const ProductTable = ({ products = [], onEdit, onDelete, onView, sortConfig, onSort }) => {
   const getStockValue = (product) => {
     const directStock = product.stock ?? product.available_stock ?? product.in_stock;
@@ -143,27 +145,22 @@ const ProductTable = ({ products = [], onEdit, onDelete, onView, sortConfig, onS
                 </td>
                 <td className="px-md py-4 text-right">
                   <div className="flex items-center justify-end gap-xs">
-                    <button
+                    <AdminActionButton
+                      icon="visibility"
+                      label="Xem chi tiết"
                       onClick={() => onView(product.id)}
-                      className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-all"
-                      title="Xem"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">visibility</span>
-                    </button>
-                    <button
+                    />
+                    <AdminActionButton
+                      icon="edit"
+                      label="Chỉnh sửa"
                       onClick={() => onEdit(product.id)}
-                      className="p-2 text-on-surface-variant hover:text-primary hover:bg-surface-container rounded-lg transition-all"
-                      title="Chỉnh sửa"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">edit</span>
-                    </button>
-                    <button
+                    />
+                    <AdminActionButton
+                      icon="delete"
+                      label="Xóa"
+                      tone="danger"
                       onClick={() => onDelete(product.id, product.name)}
-                      className="p-2 text-on-surface-variant hover:text-error hover:bg-error-container rounded-lg transition-all"
-                      title="Xóa"
-                    >
-                      <span className="material-symbols-outlined text-[20px]">delete</span>
-                    </button>
+                    />
                   </div>
                 </td>
               </tr>

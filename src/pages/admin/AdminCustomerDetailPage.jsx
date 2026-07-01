@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import PageHeader from '../../components/admin/PageHeader';
+import AdminActionButton from '../../components/admin/AdminActionButton';
 import CustomerService from '../../services/CustomerService';
 import OrderService from '../../services/OrderService';
 
@@ -280,7 +281,7 @@ const AdminCustomerDetailPage = () => {
                           <th className="px-md py-3 text-label-sm text-on-surface-variant font-semibold">Ngày đặt</th>
                           <th className="px-md py-3 text-label-sm text-on-surface-variant font-semibold">Tổng cộng</th>
                           <th className="px-md py-3 text-label-sm text-on-surface-variant font-semibold">Trạng thái</th>
-                          <th className="px-md py-3 text-label-sm text-on-surface-variant font-semibold text-right">Thao tác</th>
+                          <th className="px-md py-3 text-label-sm text-on-surface-variant font-semibold text-right">Hành động</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-outline-variant">
@@ -310,9 +311,7 @@ const AdminCustomerDetailPage = () => {
                               <td className="px-md py-4 text-right">
                                 <div className="flex justify-end">
                                   <Link to={`/admin/orders/${order.id}`}>
-                                    <button className="p-2 text-outline hover:text-primary transition-colors">
-                                      <span className="material-symbols-outlined">visibility</span>
-                                    </button>
+                                    <AdminActionButton icon="visibility" label="Xem chi tiết đơn hàng" />
                                   </Link>
                                 </div>
                               </td>

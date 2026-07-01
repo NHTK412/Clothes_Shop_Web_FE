@@ -1,71 +1,67 @@
 import axios from "axios";
-import Cookies from "js-cookie";
+import {
+    clearAuthSession,
+    getAccessToken,
+    getLoginUrl,
+    getUserRole,
+    isTokenExpired,
+} from "../utils/authSession";
 
 const instance = axios.create({
     baseURL: import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000/api",
 });
-const whileList = ["/auth/login", "/auth/register", "/auth/refresh-token"];
+const PUBLIC_AUTH_ENDPOINTS = [
+    "/auth/login",
+    "/auth/register",
+    "/auth/oauth2",
+    "/auth/send-reset-link",
+    "/auth/reset-password",
+    "/auth/refresh-token",
+];
+const CREDENTIAL_ENDPOINTS = PUBLIC_AUTH_ENDPOINTS.filter(
+    (endpoint) => endpoint !== "/auth/refresh-token",
+);
 
-// Helper to decode JWT payload (not verify, just read)
-const decodeJWT = (token) => {
-    try {
-        const payload = token.split('.')[1];
-        const decoded = JSON.parse(atob(payload));
-        return decoded;
-    } catch (e) {
-        return null;
-    }
-};
+let redirectingToLogin = false;
 
-const getStoredToken = () => {
-    if (typeof window === "undefined") return null;
+const isPublicAuthRequest = (url = "") =>
+    PUBLIC_AUTH_ENDPOINTS.some((endpoint) => url.includes(endpoint));
 
-    // Always try to read from cookies first (most reliable)
-    const cookieToken = Cookies.get("access_token") || Cookies.get("token");
-    if (cookieToken) return cookieToken;
+const isCredentialRequest = (url = "") =>
+    CREDENTIAL_ENDPOINTS.some((endpoint) => url.includes(endpoint));
 
-    // Fallback to localStorage
-    return window.localStorage.getItem("access_token") || window.localStorage.getItem("token") || null;
+const redirectToLogin = () => {
+    if (typeof window === "undefined" || redirectingToLogin) return;
+
+    clearAuthSession();
+    if (window.location.pathname === "/login") return;
+
+    redirectingToLogin = true;
+    window.location.replace(getLoginUrl());
 };
 
 instance.interceptors.request.use(
     (config) => {
-        // Skip auth for public endpoints
-        if (whileList.some((url) => config.url.includes(url))) {
+        if (isPublicAuthRequest(config.url)) {
             return config;
         }
 
-        // Read token on every request (fresh read)
-        const token = getStoredToken();
-        const userRole = Cookies.get("user_role") || window.localStorage.getItem("user_role");
-        
-        console.group(`[Axios] 📤 ${config.method?.toUpperCase()} ${config.url}`);
-        
+        const token = getAccessToken();
+
         if (token) {
+            if (isTokenExpired(token)) {
+                redirectToLogin();
+                return Promise.reject(
+                    new axios.CanceledError("Phiên đăng nhập đã hết hạn."),
+                );
+            }
+
             config.headers = {
                 ...(config.headers || {}),
                 Authorization: `Bearer ${token}`,
-                // Add role as custom header (workaround for backend not including role in JWT)
-                "X-User-Role": userRole || "ROLE_CUSTOMER",
+                "X-User-Role": getUserRole() || "ROLE_CUSTOMER",
             };
-            console.log(`Token (first 30 chars): ${token.substring(0, 30)}...`);
-            
-            // Decode and show JWT payload
-            const jwtPayload = decodeJWT(token);
-            if (jwtPayload) {
-                console.log(`JWT Payload:`, jwtPayload);
-                console.log(`⚠️ JWT has NO role claim - using X-User-Role header instead`);
-            }
-            
-            console.log(`User Role (from storage): ${userRole}`);
-            console.log(`Custom Header X-User-Role: ${userRole || "ROLE_CUSTOMER"}`);
-        } else {
-            console.warn(`⚠️ No token found!`);
-            console.log(`Cookies:`, Object.keys(Cookies.get() || {}));
-            console.log(`localStorage keys:`, Object.keys(window.localStorage));
         }
-        
-        console.groupEnd();
 
         return config;
     },
@@ -76,21 +72,12 @@ instance.interceptors.response.use(
     (response) => response.data,
     (error) => {
         const status = error.response?.status;
-        const url = error.config?.url;
-        const data = error.response?.data;
-        
-        console.group(`[Axios] ❌ Error ${status} on ${url}`);
-        console.log(`Response:`, data);
-        
-        if (status === 403) {
-            console.error(`Forbidden - Check if user has admin role`);
-            const storedRole = Cookies.get("user_role") || window.localStorage.getItem("user_role");
-            console.log(`Current Role: ${storedRole}`);
-        } else if (status === 401) {
-            console.error(`Unauthorized - Token may be expired or invalid`);
+        const requestUrl = error.config?.url || "";
+
+        if (status === 401 && !isCredentialRequest(requestUrl)) {
+            redirectToLogin();
         }
-        
-        console.groupEnd();
+
         return Promise.reject(error);
     }
 );

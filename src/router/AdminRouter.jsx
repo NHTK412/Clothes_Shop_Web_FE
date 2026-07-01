@@ -1,21 +1,19 @@
-import Cookies from "js-cookie";
 import { Navigate } from "react-router-dom";
+import {
+    clearAuthSession,
+    getAccessToken,
+    getUserRole,
+    isTokenExpired,
+} from "../utils/authSession";
 
 const ADMIN_ROLES = ["ROLE_ADMIN", "ADMIN", "SUPER_ADMIN", "SUPERADMIN"];
 
 const AdminRouter = ({ children }) => {
-    const token =
-        Cookies.get("access_token") ||
-        Cookies.get("token") ||
-        window.localStorage.getItem("access_token") ||
-        window.localStorage.getItem("token");
-    const role = (
-        Cookies.get("user_role") ||
-        window.localStorage.getItem("user_role") ||
-        ""
-    ).trim().toUpperCase();
+    const token = getAccessToken();
+    const role = getUserRole();
 
-    if (!token) {
+    if (!token || isTokenExpired(token)) {
+        if (token) clearAuthSession();
         return <Navigate to="/login" replace />;
     }
 

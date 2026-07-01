@@ -68,6 +68,7 @@ const AdminSidebar = ({ isOpen = false, onClose = () => { } }) => {
     { id: 'promotions', label: 'Khuyến mãi', icon: 'sell', path: '/admin/promotions' },
     { id: 'vouchers', label: 'Voucher', icon: 'confirmation_number', path: '/admin/vouchers' },
     { id: 'orders', label: 'Đơn hàng', icon: 'shopping_cart', path: '/admin/orders' },
+    { id: 'refunds', label: 'Trả hàng & hoàn tiền', icon: 'assignment_return', path: '/admin/refunds' },
     { id: 'customers', label: 'Khách hàng', icon: 'group', path: '/admin/customers' },
     { id: 'categories', label: 'Danh mục', icon: 'category', path: '/admin/categories' },
     { id: 'attributes', label: 'Thuộc tính', icon: 'tune', path: '/admin/attributes' },

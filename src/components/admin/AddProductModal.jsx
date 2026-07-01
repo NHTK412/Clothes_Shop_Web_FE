@@ -355,7 +355,6 @@ const AddProductModal = ({ isOpen, onClose, onProductAdded }) => {
         variants,
       };
 
-      console.log("[AddProductModal] Creating product with data:", productData);
 
       const response = await ProductsService.createProduct(productData);
 

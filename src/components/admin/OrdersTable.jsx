@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import AdminActionButton from './AdminActionButton';
 
 const formatCurrency = (value) => `${Number(value || 0).toLocaleString('vi-VN')}₫`;
 
@@ -88,7 +89,7 @@ const OrdersTable = ({ orders = [], isLoading = false, onViewAll }) => {
               <th className="px-md py-4 font-label-md text-on-surface-variant">Ngày đặt</th>
               <th className="px-md py-4 font-label-md text-on-surface-variant">Tổng cộng</th>
               <th className="px-md py-4 font-label-md text-on-surface-variant">Trạng thái</th>
-              <th className="px-md py-4 font-label-md text-on-surface-variant">Hành động</th>
+              <th className="px-md py-4 text-right font-label-md text-on-surface-variant">Hành động</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-outline-variant">
@@ -116,14 +117,13 @@ const OrdersTable = ({ orders = [], isLoading = false, onViewAll }) => {
                     </span>
                   </td>
                   <td className="px-md py-4">
-                    <button
-                      type="button"
-                      onClick={() => handleViewDetail(order.id)}
-                      className="material-symbols-outlined text-on-surface-variant hover:text-primary transition-all text-xl"
-                      title="Xem chi tiết đơn hàng"
-                    >
-                      arrow_outward
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      <AdminActionButton
+                        icon="arrow_outward"
+                        label="Xem chi tiết đơn hàng"
+                        onClick={() => handleViewDetail(order.id)}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))

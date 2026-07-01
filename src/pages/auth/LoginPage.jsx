@@ -2,15 +2,18 @@
 import { EyeInvisibleOutlined, EyeOutlined, LoadingOutlined } from "@ant-design/icons";
 import { Icon } from "@iconify/react";
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { login, oauthLogin } from "../../services/AuthService";
 import { Button, notification, Spin } from "antd";
 import Cookies from "js-cookie";
 import { auth, googleProvider } from "../../configs/FirebaseConfig";
 import { signInWithPopup } from 'firebase/auth';
+import { getSafeRedirectPath } from "../../utils/authSession";
 
 const LoginPage = () => {
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+    const redirectPath = getSafeRedirectPath(searchParams.get("redirect"));
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -20,11 +23,6 @@ const LoginPage = () => {
     const handleGoogleLogin = async () => {
         try {
             const result = await signInWithPopup(auth, googleProvider);
-
-            console.log("Google login result:", result);
-            console.log("Email:", result.user.email);
-            console.log("UID: ", result.user.uid);
-            console.log("displayName: ", result.user.displayName);
 
             const oauthData = {
                 email: result.user.email,
@@ -43,7 +41,7 @@ const LoginPage = () => {
                 expires: response.expires_in / (60 * 60 * 24)
             });
 
-            navigate('/');
+            navigate(redirectPath, { replace: true });
         }
         catch (error) {
             console.error("Google login error:", error);
@@ -79,10 +77,6 @@ const LoginPage = () => {
             const expiresInDays = Number(response?.expires_in || 7) / (60 * 60 * 24);
             const token = response?.access_token || response?.token;
 
-            console.log("[LoginPage] Login response received:");
-            console.log(`  Role detected: ${role}`);
-            console.log(`  Is Admin: ${isAdmin}`);
-            console.log(`  Token: ${token?.substring(0, 30)}...`);
 
             if (token) {
                 Cookies.set("access_token", token, {
@@ -90,7 +84,6 @@ const LoginPage = () => {
                     path: "/",
                 });
                 window.localStorage.setItem("access_token", token);
-                console.log("[LoginPage] Token saved to cookies & localStorage");
             }
 
             Cookies.set("user_role", role, {
@@ -98,12 +91,13 @@ const LoginPage = () => {
                 path: "/",
             });
             window.localStorage.setItem("user_role", role);
-            console.log(`[LoginPage] Role '${role}' saved to cookies & localStorage`);
 
-            navigate(isAdmin ? "/admin" : "/");
+            navigate(
+                isAdmin ? "/admin" : getSafeRedirectPath(redirectPath),
+                { replace: true },
+            );
 
         } catch (error) {
-            console.log("Login error:", error);
             notification.error({
                 title: "Đăng nhập thất bại",
                 description: error.response?.data?.message || "Có lỗi xảy ra khi đăng nhập. Vui lòng thử lại.",

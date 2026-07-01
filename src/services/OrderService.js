@@ -142,6 +142,15 @@ const OrderService = {
         const response = await api.get("/admin/orders/summary", { params });
         return response?.data ?? response;
     },
+
+    async getTokenPrintLabel(orderCode) {
+        if (!orderCode) return null;
+
+        const response = await api.post("/ghn/print-label", {
+            order_code: orderCode,
+        });
+        return response?.data ?? response;
+    }
 };
 
 export default OrderService;

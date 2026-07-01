@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Modal, Spin, Switch, notification } from 'antd';
 import PageHeader from '../../components/admin/PageHeader';
+import AdminActionButton from '../../components/admin/AdminActionButton';
 import VoucherService from '../../services/VoucherService';
 
 const EMPTY_FORM = {
@@ -335,7 +336,7 @@ const AdminVoucherListPage = () => {
                   <th className="px-md py-sm">Lượt dùng</th>
                   <th className="px-md py-sm">Hết hạn</th>
                   <th className="px-md py-sm">Trạng thái</th>
-                  <th className="px-md py-sm text-right">Thao tác</th>
+                  <th className="px-md py-sm text-right">Hành động</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
@@ -358,9 +359,6 @@ const AdminVoucherListPage = () => {
                           <div className="inline-flex rounded-md bg-primary/10 px-2.5 py-1 font-mono text-sm font-bold tracking-wide text-primary">
                             {voucher.code}
                           </div>
-                          <p className="mt-2 max-w-xs truncate text-sm text-on-surface-variant">
-                            {voucher.description || 'Không có mô tả'}
-                          </p>
                         </td>
                         <td className="px-md py-md">
                           <p className="font-semibold text-error">
@@ -398,13 +396,11 @@ const AdminVoucherListPage = () => {
                         </td>
                         <td className="px-md py-md">
                           <div className="flex justify-end gap-2">
-                            <button
-                              type="button"
+                            <AdminActionButton
+                              icon="edit"
+                              label="Chỉnh sửa voucher"
                               onClick={() => openEditForm(voucher)}
-                              className="rounded-lg border border-outline-variant px-sm py-2 text-sm text-on-surface hover:bg-surface-container"
-                            >
-                              Chỉnh sửa
-                            </button>
+                            />
                           </div>
                         </td>
                       </tr>

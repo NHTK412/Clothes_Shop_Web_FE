@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Input, Modal, Rate, Upload, notification } from "antd";
 import OrderService from "../../services/OrderService";
 import UploadService from "../../services/UploadService";
+import ReturnRefundService from "../../services/ReturnRefundService";
 
 const BACKEND_ORIGIN = (import.meta.env.VITE_BACKEND_URL || "http://127.0.0.1:8000/api").replace(/\/api\/?$/, "");
 
@@ -63,6 +64,25 @@ const ghnStatusMeta = {
 
 const cancellableStatuses = ["PENDING_PAYMENT", "CONFIRMED"];
 
+const returnStatusMeta = {
+    pending: {
+        label: "Đang chờ shop xử lý",
+        className: "bg-amber-100 text-amber-800",
+    },
+    approved: {
+        label: "Đã duyệt trả hàng",
+        className: "bg-blue-100 text-blue-800",
+    },
+    rejected: {
+        label: "Đã từ chối trả hàng",
+        className: "bg-error-container text-on-error-container",
+    },
+    cancelled: {
+        label: "Đã hủy yêu cầu",
+        className: "bg-surface-container-high text-on-surface-variant",
+    },
+};
+
 const formatDateTime = (dateString) => {
     if (!dateString) return "Đang cập nhật";
 
@@ -107,6 +127,12 @@ const OrderDetailPage = () => {
     const [trackingItems, setTrackingItems] = useState([]);
     const [isTrackingLoading, setIsTrackingLoading] = useState(false);
     const [trackingError, setTrackingError] = useState("");
+    const [returnRequest, setReturnRequest] = useState(null);
+    const [isReturnRequestLoading, setIsReturnRequestLoading] = useState(false);
+    const [isReturnModalOpen, setIsReturnModalOpen] = useState(false);
+    const [returnReason, setReturnReason] = useState("");
+    const [isSubmittingReturn, setIsSubmittingReturn] = useState(false);
+    const [isCancellingReturn, setIsCancellingReturn] = useState(false);
 
     useEffect(() => {
         let isMounted = true;
@@ -173,6 +199,42 @@ const OrderDetailPage = () => {
         };
     }, [order?.ghn_order_code, order?.status]);
 
+    useEffect(() => {
+        let isMounted = true;
+
+        const fetchReturnRequest = async () => {
+            if (!order?.id) return;
+
+            setIsReturnRequestLoading(true);
+            try {
+                const response = await ReturnRefundService.getReturnRequests({
+                    page: 1,
+                    per_page: 100,
+                });
+                if (!isMounted) return;
+                const existingRequest = response.items.find(
+                    (item) => Number(item.order_id) === Number(order.id),
+                );
+                setReturnRequest(existingRequest || null);
+            } catch (err) {
+                if (!isMounted) return;
+                setReturnRequest(null);
+                notification.error({
+                    message: "Không thể kiểm tra yêu cầu trả hàng",
+                    description: err?.response?.data?.message || "Vui lòng tải lại trang và thử lại.",
+                });
+            } finally {
+                if (isMounted) setIsReturnRequestLoading(false);
+            }
+        };
+
+        fetchReturnRequest();
+
+        return () => {
+            isMounted = false;
+        };
+    }, [order?.id]);
+
     const details = useMemo(() => order?.order_details ?? [], [order?.order_details]);
     const meta = statusMeta[order?.status] || {
         label: order?.status || "Đang cập nhật",
@@ -184,6 +246,10 @@ const OrderDetailPage = () => {
     );
     const canCancelOrder = cancellableStatuses.includes(order?.status);
     const canReviewOrder = order?.status === "COMPLETED";
+    const canRequestReturn =
+        order?.status === "COMPLETED" &&
+        !returnRequest &&
+        !isReturnRequestLoading;
 
     const handlePayNow = async () => {
         if (!order?.id || isPaymentLoading) return;
@@ -241,6 +307,72 @@ const OrderDetailPage = () => {
             okButtonProps: { danger: true },
             centered: true,
             onOk: cancelOrder,
+        });
+    };
+
+    const handleSubmitReturn = async () => {
+        const reason = returnReason.trim();
+        if (!order?.id || isSubmittingReturn) return;
+
+        if (!reason) {
+            notification.warning({
+                message: "Vui lòng nhập lý do trả hàng",
+            });
+            return;
+        }
+
+        setIsSubmittingReturn(true);
+        try {
+            const response = await ReturnRefundService.createReturnRequest(
+                order.id,
+                reason,
+            );
+            setReturnRequest(response);
+            setIsReturnModalOpen(false);
+            setReturnReason("");
+            notification.success({
+                message: "Đã gửi yêu cầu trả hàng",
+                description: "Shop sẽ kiểm tra và phản hồi yêu cầu của bạn.",
+            });
+        } catch (err) {
+            notification.error({
+                message: "Không thể gửi yêu cầu trả hàng",
+                description: err?.response?.data?.message || "Vui lòng kiểm tra thông tin và thử lại.",
+            });
+        } finally {
+            setIsSubmittingReturn(false);
+        }
+    };
+
+    const cancelReturnRequest = async () => {
+        if (!returnRequest?.id || isCancellingReturn) return;
+
+        setIsCancellingReturn(true);
+        try {
+            const response = await ReturnRefundService.cancelReturnRequest(
+                returnRequest.id,
+            );
+            setReturnRequest(response);
+            notification.success({ message: "Đã hủy yêu cầu trả hàng" });
+        } catch (err) {
+            notification.error({
+                message: "Không thể hủy yêu cầu",
+                description: err?.response?.data?.message || "Yêu cầu có thể đã được shop xử lý.",
+            });
+        } finally {
+            setIsCancellingReturn(false);
+        }
+    };
+
+    const handleCancelReturnRequest = () => {
+        Modal.confirm({
+            title: "Hủy yêu cầu trả hàng?",
+            content: "Bạn chỉ có thể hủy khi shop chưa xử lý yêu cầu.",
+            okText: "Hủy yêu cầu",
+            cancelText: "Giữ lại",
+            okButtonProps: { danger: true },
+            centered: true,
+            onOk: cancelReturnRequest,
         });
     };
 
@@ -414,6 +546,49 @@ const OrderDetailPage = () => {
                                 <p className="mt-xs max-w-xs text-body-sm text-error">{cancelError}</p>
                             ) : null}
                         </>
+                    ) : null}
+                    {canRequestReturn ? (
+                        <button
+                            className="mt-sm inline-flex items-center justify-center gap-xs rounded-lg border border-primary px-md py-xs font-label-md text-label-md text-primary transition-colors hover:bg-secondary-container active:opacity-70"
+                            type="button"
+                            onClick={() => setIsReturnModalOpen(true)}
+                        >
+                            Yêu cầu trả hàng
+                            <span className="material-symbols-outlined text-base">assignment_return</span>
+                        </button>
+                    ) : null}
+                    {isReturnRequestLoading && order.status === "COMPLETED" ? (
+                        <span className="mt-sm text-body-sm text-on-surface-variant">
+                            Đang kiểm tra yêu cầu trả hàng...
+                        </span>
+                    ) : null}
+                    {returnRequest ? (
+                        <div className="mt-sm flex w-full max-w-full flex-col items-start gap-2 sm:w-auto sm:max-w-lg sm:items-end">
+                            <div className="flex max-w-full flex-wrap items-center gap-2 sm:flex-nowrap">
+                                <span className={`shrink-0 whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold ${returnStatusMeta[returnRequest.status]?.className || "bg-surface-container-high text-on-surface-variant"}`}>
+                                    {returnStatusMeta[returnRequest.status]?.label || returnRequest.status}
+                                </span>
+                                {returnRequest.note ? (
+                                    <p
+                                        className="min-w-0 max-w-full text-left text-body-sm text-on-surface-variant sm:max-w-80 sm:truncate sm:text-right"
+                                        title={`Ghi chú: ${returnRequest.note}`}
+                                    >
+                                        <span className="font-medium text-on-surface">Ghi chú:</span>{" "}
+                                        {returnRequest.note}
+                                    </p>
+                                ) : null}
+                            </div>
+                            {returnRequest.status === "pending" ? (
+                                <button
+                                    type="button"
+                                    disabled={isCancellingReturn}
+                                    onClick={handleCancelReturnRequest}
+                                    className="text-body-sm font-medium text-error hover:underline disabled:opacity-50"
+                                >
+                                    {isCancellingReturn ? "Đang hủy..." : "Hủy yêu cầu trả hàng"}
+                                </button>
+                            ) : null}
+                        </div>
                     ) : null}
                 </div>
             </div>
@@ -624,6 +799,37 @@ const OrderDetailPage = () => {
                     </div>
                 </aside>
             </div>
+
+            <Modal
+                centered
+                confirmLoading={isSubmittingReturn}
+                okText="Gửi yêu cầu"
+                cancelText="Để sau"
+                open={isReturnModalOpen}
+                title="Yêu cầu trả hàng"
+                onCancel={() => {
+                    if (!isSubmittingReturn) setIsReturnModalOpen(false);
+                }}
+                onOk={handleSubmitReturn}
+            >
+                <div className="flex flex-col gap-sm">
+                    <div className="rounded-lg bg-surface-container-low p-sm text-body-sm text-on-surface-variant">
+                        Yêu cầu áp dụng cho toàn bộ đơn hàng #{order.id}. Shop sẽ liên hệ để thống nhất phương án hoàn tiền trước khi duyệt.
+                    </div>
+                    <label className="font-label-md text-label-md text-on-surface">
+                        Lý do trả hàng <span className="text-error">*</span>
+                    </label>
+                    <Input.TextArea
+                        autoFocus
+                        maxLength={1000}
+                        rows={5}
+                        showCount
+                        placeholder="Ví dụ: Sản phẩm không đúng kích thước đã đặt..."
+                        value={returnReason}
+                        onChange={(event) => setReturnReason(event.target.value)}
+                    />
+                </div>
+            </Modal>
 
             <Modal
                 centered

@@ -6,6 +6,7 @@ import ForgotPasswordPage from "../pages/auth/ForgotPasswordPage";
 import PublicRouter from "./PublicRouter";
 import CustomerRouter from "./CustomerRouter";
 import AdminRouter from "./AdminRouter";
+import AuthenticatedRouter from "./AuthenticatedRouter";
 import ResetPasswordPage from "../pages/auth/ResetPasswordPage";
 import HomePage from "../pages/customer/HomePage";
 import FilteredProductListPage from "../pages/customer/FilteredProductListPage";
@@ -26,6 +27,7 @@ import AdminOrderDetailPage from "../pages/admin/AdminOrderDetailPage";
 import AdminSettingsPage from "../pages/admin/AdminSettingsPage";
 import AdminPromotionListPage from "../pages/admin/AdminPromotionListPage";
 import AdminVoucherListPage from "../pages/admin/AdminVoucherListPage";
+import AdminRefundManagementPage from "../pages/admin/AdminRefundManagementPage";
 import CheckoutPage from "../pages/customer/CheckoutPage";
 import ReturnPage from "../pages/customer/ReturnPage";
 import OrdersPage from "../pages/customer/OrdersPage";
@@ -87,6 +89,10 @@ const router = createBrowserRouter([
                 element: <AdminOrderDetailPage />
             },
             {
+                path: "refunds",
+                element: <AdminRefundManagementPage />
+            },
+            {
                 path: "categories",
                 element: <AdminCategoryManagementPage />
             },
@@ -126,7 +132,7 @@ const router = createBrowserRouter([
             },
             {
                 path: "cart",
-                element: <CartDetailPage />
+                element: <AuthenticatedRouter><CartDetailPage /></AuthenticatedRouter>
             },
             {
                 path: "products/:id",
@@ -134,31 +140,31 @@ const router = createBrowserRouter([
             },
             {
                 path: "favorites",
-                element: <FavoriteProductsPage />
+                element: <AuthenticatedRouter><FavoriteProductsPage /></AuthenticatedRouter>
             },
             {
                 path: "cart",
-                element: <CartDetailPage />
+                element: <AuthenticatedRouter><CartDetailPage /></AuthenticatedRouter>
             },
             {
                 path: "checkout",
-                element: <CheckoutPage />
+                element: <AuthenticatedRouter><CheckoutPage /></AuthenticatedRouter>
             },
             {
                 path: "return",
-                element: <ReturnPage />
+                element: <AuthenticatedRouter><ReturnPage /></AuthenticatedRouter>
             },
             {
                 path: "profile",
-                element: <ProfilePage />
+                element: <AuthenticatedRouter><ProfilePage /></AuthenticatedRouter>
             },
             {
                 path: "orders",
-                element: <OrdersPage />
+                element: <AuthenticatedRouter><OrdersPage /></AuthenticatedRouter>
             },
             {
                 path: "orders/:id",
-                element: <OrderDetailPage />
+                element: <AuthenticatedRouter><OrderDetailPage /></AuthenticatedRouter>
             },
             {
                 path: "login",

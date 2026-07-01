@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal, Spin, Upload, notification } from 'antd';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import PageHeader from '../../components/admin/PageHeader';
+import AdminActionButton from '../../components/admin/AdminActionButton';
 import CategoryService from '../../services/CategoryService';
 import UploadService from '../../services/UploadService';
 
@@ -313,7 +314,7 @@ const AdminCategoryManagementPage = () => {
                   <th className="px-md py-sm">Danh mục cha</th>
                   <th className="px-md py-sm">Danh mục con</th>
                   <th className="px-md py-sm">Cập nhật</th>
-                  <th className="px-md py-sm text-right">Thao tác</th>
+                  <th className="px-md py-sm text-right">Hành động</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
@@ -367,12 +368,17 @@ const AdminCategoryManagementPage = () => {
                       </td>
                       <td className="px-md py-sm">
                         <div className="flex justify-end gap-2">
-                          <button type="button" onClick={() => openEditForm(category)} className="inline-flex items-center gap-1 rounded-lg border border-outline-variant px-sm py-2 text-sm hover:bg-surface-container">
-                            <span className="material-symbols-outlined text-[17px]">edit</span>Sửa
-                          </button>
-                          <button type="button" onClick={() => setDeleteTarget(category)} className="inline-flex items-center gap-1 rounded-lg border border-error/40 px-sm py-2 text-sm text-error hover:bg-error-container/30">
-                            <span className="material-symbols-outlined text-[17px]">delete</span>Xóa
-                          </button>
+                          <AdminActionButton
+                            icon="edit"
+                            label="Chỉnh sửa danh mục"
+                            onClick={() => openEditForm(category)}
+                          />
+                          <AdminActionButton
+                            icon="delete"
+                            label="Xóa danh mục"
+                            tone="danger"
+                            onClick={() => setDeleteTarget(category)}
+                          />
                         </div>
                       </td>
                     </tr>

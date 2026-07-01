@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Modal, Select, Spin, Switch, notification } from 'antd';
 import ConfirmModal from '../../components/admin/ConfirmModal';
 import PageHeader from '../../components/admin/PageHeader';
+import AdminActionButton from '../../components/admin/AdminActionButton';
 import ProductsService from '../../services/ProductsService';
 import PromotionService from '../../services/PromotionService';
 
@@ -337,7 +338,7 @@ const AdminPromotionListPage = () => {
                   <th className="px-md py-sm">Thời gian</th>
                   <th className="px-md py-sm">Sản phẩm</th>
                   <th className="px-md py-sm">Trạng thái</th>
-                  <th className="px-md py-sm text-right">Thao tác</th>
+                  <th className="px-md py-sm text-right">Hành động</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant">
@@ -381,21 +382,18 @@ const AdminPromotionListPage = () => {
                       </td>
                       <td className="px-md py-md">
                         <div className="flex justify-end gap-2">
-                          <button
-                            type="button"
+                          <AdminActionButton
+                            icon="edit"
+                            label="Chỉnh sửa khuyến mãi"
                             onClick={() => openEditForm(promotion)}
-                            className="rounded-lg border border-outline-variant px-sm py-2 text-sm text-on-surface hover:bg-surface-container"
-                          >
-                            Chỉnh sửa
-                          </button>
+                          />
                           {promotion.is_active && (
-                            <button
-                              type="button"
+                            <AdminActionButton
+                              icon="toggle_off"
+                              label="Tắt khuyến mãi"
+                              tone="danger"
                               onClick={() => setDeactivateTarget(promotion)}
-                              className="rounded-lg border border-error/50 px-sm py-2 text-sm text-error hover:bg-error-container/20"
-                            >
-                              Tắt
-                            </button>
+                            />
                           )}
                         </div>
                       </td>

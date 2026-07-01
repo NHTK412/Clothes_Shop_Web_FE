@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
 import PageHeader from '../../components/admin/PageHeader';
+import AdminActionButton from '../../components/admin/AdminActionButton';
 import CustomerService from '../../services/CustomerService';
 
 const normalizeCustomerName = (customer) => {
@@ -339,11 +340,9 @@ const AdminCustomerListPage = () => {
                       <td className="px-md py-4 text-body-md font-bold text-primary">{formatMoney(customer.total_spent ?? customer.total_spent_vnd ?? customer.total_spent_value ?? customer.total_spent_amount)}</td>
                       <td className="px-md py-4 text-body-md text-secondary">{lastActiveLabel(customer)}</td>
                       <td className="px-md py-4 text-right">
-                        <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <div className="flex justify-end gap-2">
                           <Link to={`/admin/customers/${customer.id ?? customer._id ?? customer.user_id}`}>
-                            <button className="p-2 text-outline hover:text-primary transition-colors">
-                              <span className="material-symbols-outlined">visibility</span>
-                            </button>
+                            <AdminActionButton icon="visibility" label="Xem chi tiết khách hàng" />
                           </Link>
                         </div>
                       </td>
